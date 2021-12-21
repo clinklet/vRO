@@ -1,5 +1,5 @@
 <?xml version='1.0' encoding='UTF-8'?>
-<dunes-script-module name="logContext" result-type="void" api-version="6.0.0" id="8cd9092a-8aad-4f5e-b764-a20631ac01a0" version="0.1.0" category-name="community.log">
+<dunes-script-module name="logContext" result-type="void" api-version="6.0.0" id="8cd9092a-8aad-4f5e-b764-a20631ac01a0" version="0.1.0" category-name="community.utility.log">
   <description><![CDATA[Log the current execution context.]]></description>
   <script encoded="false"><![CDATA[/*
 Version Date    Developer
