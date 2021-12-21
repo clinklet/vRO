@@ -1,5 +1,5 @@
 <?xml version='1.0' encoding='UTF-8'?>
-<dunes-script-module name="testExpandVariables" result-type="boolean" api-version="6.0.0" id="6ac7aa2e-2585-46ba-910d-26086ca246d2" version="0.0.1" allowed-operations="vfe" category-name="community.utility.test">
+<dunes-script-module name="testExpandString" result-type="boolean" api-version="6.0.0" id="6ac7aa2e-2585-46ba-910d-26086ca246d2" version="0.0.1" allowed-operations="vfe" category-name="community.utility.test">
   <script encoded="false"><![CDATA[var ans;
 
 var props = new Properties();
