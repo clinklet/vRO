@@ -1,0 +1,40 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<dunes-script-module name="testExpandVariables" result-type="boolean" api-version="6.0.0" id="6ac7aa2e-2585-46ba-910d-26086ca246d2" version="0.0.1" allowed-operations="vfe" category-name="community.utility.test">
+  <script encoded="false"><![CDATA[var ans;
+
+var props = new Properties();
+props.put("test", "_test_");
+props.put("test2", "_test2_");
+
+// Test 1 - Straight variable expansion
+var source = "This is to ${ test} it all - ${test2}.";
+var soln = "This is to _test_ it all - _test2_.";
+
+ans = System.getModule("community.utilities").expandString(source, props);
+if (ans != soln) {
+    System.error("test1 failed.");
+}
+
+System.log("----- End Test 1 ---------");
+// Test 2 - Concatenation
+var source = "This is to ${'abc' + test} it all - ${test2}.";
+var soln = "This is to abc_test_ it all - _test2_.";
+
+ans = System.getModule("community.utilities").expandString(source, props);
+if (ans != soln) {
+    System.error("test2 failed.");
+}
+System.log("----- End Test 2 ---------");
+
+// Test 3 - to_lower function
+var source = "This is to_lower test ${to_lower('ABC') + 'def'}";
+var soln = "This is to_lower test abcdef";
+
+ans = System.getModule("community.utilities").expandString(source, props);
+if (ans != soln) {
+    System.error("test2 failed.");
+}
+System.log("----- End Test 2 ---------");
+
+return true;]]></script>
+</dunes-script-module>
