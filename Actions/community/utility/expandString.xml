@@ -1,0 +1,627 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<dunes-script-module name="expandString" result-type="string" api-version="6.0.0" id="b71ccb8b-fab1-4131-a88e-397bc4220b18" version="0.0.0" allowed-operations="vfe" category-name="community.utility">
+  <description><![CDATA[Scan a string for variable references and expand them to their values.]]></description>
+  <param n="inputString" t="string"><![CDATA[String to be expanded]]></param>
+  <param n="prop1" t="Properties"><![CDATA[Primary source of variables]]></param>
+  <param n="prop2" t="Properties"><![CDATA[Optional secondary source of variables]]></param>
+  <script encoded="false"><![CDATA[/*#!/usr/bin/node
+//
+var prop = { first: "First", second: "Second", third: 'Third', first2: "${first}"};
+var nestedProp = { nfirst: "NFirst", nsecond: "NSecond", five: "5"};
+prop.nested = nestedProp;
+var str;
+var soln;
+var csoln;
+var pass = 0;
+var fail = 0;
+
+// Check nested properites and != conditional
+console.log("################ Test 1 ###################");
+str = "${nested.nfirst != 'First'? 'NFirst one'} test";
+soln = "NFirst one test";
+
+csoln = main(str, prop, null);
+
+console.log("Input is " + str);
+console.log("Solution is " + csoln);
+
+if (csoln != soln) {
+    fail++;
+    console.log("Expecting   " + soln);
+    console.log("Test 1 FAILURE");
+} else {
+    pass++;
+    console.log("Test 1 Passed");
+}
+
+// Check == conditional and \\${ escaping variable expansion
+console.log("################ Test 2 ###################");
+str = "\\${second} ${first == 'First'? 'First one'} test";
+soln = "${second} First one test";
+
+csoln = main(str, prop, null);
+
+console.log("Input is " + str);
+console.log("Solution is " + csoln);
+
+if (csoln != soln) {
+    fail++;
+    console.log("Test 2 FAILURE");
+    console.log("Expecting   " + soln);
+} else {
+    pass++;
+    console.log("Test 2 Passed");
+}
+
+// Check nested conditionals and multiple variables and quote compression
+console.log("################ Test 3 ###################");
+str = "hello ${ 'first''quote '+ to_lower('SECOND', third) + '_suffix'   } world ${first2 + ' one'} cond ${'First' == 5? 'yes' : to_lower(second) == 'second'? 'syes': 'sno'} end";
+soln = "hello first'quote second_suffix world First one cond syes end"
+csoln = main(str, prop, null);
+
+console.log("Input is " + str);
+console.log("Solution is " + csoln);
+
+if (csoln != soln) {
+    fail++;
+    console.log("Test 3 FAILURE");
+    console.log("Expecting   " + soln);
+} else {
+    pass++;
+    console.log("Test 3 Passed");
+}
+
+// Check numeric comparison in conditionals
+console.log("################ Test 4 ###################");
+str = "${'07' > five? 'Seven it is': 'Five it is'}";
+soln = "Seven it is"
+
+csoln = main(str, nestedProp, null);
+
+console.log("Input is " + str);
+console.log("Solution is " + csoln);
+
+if (csoln != soln) {
+    fail++;
+    console.log("Expecting   " + soln);
+    console.log("Test 4 FAILURE");
+} else {
+    pass++;
+    console.log("Test 4 Passed");
+}
+
+console.log("Pass = " + pass + ", fail = " + fail);
+*/
+return main(inputString, prop1, prop2);
+
+
+function main(str, prop1, prop2) {
+
+	/*
+
+	Fields:
+		*value - string or array of sub-objects
+		*type - node type.  See below
+		*pos - Position in the array.
+		*op - Operator.
+		function - Name of function 
+		arguments - Arguments to the function
+
+	Types: 
+		const - String literal
+		var - Variable that needs to be expanded.  When expaned, turns the value into an xvar.
+		xvar - Value is an array of sub-objects
+		func - Function call
+
+	op:
+		+ - concatenation
+		== - Compare two values for equality.  Does numeric comparison if both values are numbers.
+		!= - Compare two values for inequality.  Does numeric comparison if both values are numbers.
+		> - Compare two values for greater than.  Does numeric comparison if both values are numbers.
+		< - Compare two values for less than.  Does numeric comparison if both values are numbers.
+		
+	*/
+
+	//console.log("### First Pass");
+	var ans = parseString(str, "", 0);
+	//console.log("Pass 1 results: " + JSON.stringify(ans, null, 2));
+
+	//console.log("### Second Pass");
+	// Expand variables and functions
+	ans = expandVariables(ans, prop1, prop2);
+	//console.log("Pass 2 results: " + JSON.stringify(ans, null, 2));
+
+	//console.log("### Third pass");
+	ans = expandVariables(ans, prop1, prop2);
+	//console.log("Pass 3 results: " + JSON.stringify(ans, null, 2));
+
+
+	return collapseData(ans);
+}
+
+//////////////////////////////////////////////////////////////////////////
+// Parsing section
+//////////////////////////////////////////////////////////////////////////
+
+// Parse a string for ${...} references.  When found, call parseVariable to process it.
+function parseString(str, npos, pos) {
+    var token="${";
+    var endToken = '}';
+
+    var parsed = [];
+    var runstr = str;
+    
+    while (runstr.length > 0) {
+        if (runstr.indexOf(token) == 0) { // var call
+            var i = runstr.indexOf(endToken) + 1;
+	    var s = runstr.substring(0, i);
+	    runstr = runstr.substring(i);
+	    s = s.substring(token.length);
+	    s = s.substring(0, s.length - endToken.length);
+    	    
+    	    node = {};
+	    node.op = "+";
+ 	    node.type = 'xvar'; // value is an array of elements
+	    node.pos = "" + pos;
+	    node.value = parseVariable(s, npos, pos);
+    
+	    parsed.push(node);
+	    pos += i;
+    
+        } else { // literal string
+	    var node = {};
+            var i = runstr.indexOf(token);
+	    
+	    // Take all text up to ${ but that does not include \${
+	    if (i > 0) {
+	        if (runstr[i-1] == '\\') { // \${ syntax, remove \ and continue processing
+	            var j = runstr.substring(i+1).indexOf(token);
+	            i = i + j + 1;
+	            if (j < 0) i = runstr.length;
+	        }
+	    }
+	    if (i < 0) i = runstr.length;
+	    	    
+	    var re = new RegExp("\\\\\\" + token, "g");
+	    node.value = runstr.substr(0, i).replace(re, token); // change xxx\${yyy to xxx${yyy
+	    
+	    node.op = "+";
+ 	    node.type = 'const';
+	    node.pos = (npos == "")? "" + pos : npos + "." + pos;
+	    parsed.push(node);
+	    
+	    runstr = runstr.substring(i);
+	    pos += i;
+
+        }
+
+    }
+
+    return parsed;
+
+}
+
+////////////////////////////////////
+// Parse a ${...} variable contents
+function parseVariable(str, npos, pos) {
+    var ans = [];
+    var parserChar = " ";
+    
+    str = ltrim(str);
+    str = rtrim(str);
+
+    while (str.length > 0) {
+        var qchar = null;
+        if ((str[0] == "'") || (str[0] == '"')) qchar = str[0];
+
+        var i = nextWordOrd(str, parserChar);
+	var i2 = 0;
+        word = nextWord(str, i);
+        str = ltrim(str.substring(i));
+	var op = "";
+
+	if (str.length > 0) { // Get operator
+	    i2 = nextWordOrd(str, parserChar);
+	    op = nextWord(str, i2);
+            str = ltrim(str.substring(i2));
+            if (op != "+") parserChar = " ?:";
+	}
+	var node = {};
+	node.value = word;
+	node.op = op;
+	node.pos = (npos == "")? "" + pos : npos + "." + pos;
+
+	if (qchar != null) {
+	    node.type = 'const';
+	} else {
+	    if (isNaN(word)) node.type = 'var';
+	    else node.type = 'const';
+	}
+
+	pos += i + i2;
+	ans.push(node);
+   
+
+        //console.log('l2: str="' + str + '"');
+        //console.log('l2: word="' + word + '"');
+    }
+    return ans;
+}
+
+////////////////////////////////////
+// Get the starting ordinal (position) of the next word
+function nextWordOrd(str, sep) {
+    var ans = 0;
+    //console.log('nextWordOrd: input "' + str + '", sep="' + sep + '"');
+
+    if ((str[0] == "'") || (str[0] == '"')) {
+	ans = str.substring(1).indexOf(str[0]);
+	
+	if (ans < 0) ans = str.length; // Missing matching quote, default to full string.
+	else ans++; // search above starts on first char, so add 1 more to str index.
+	
+	while ((ans < str.length-1) && (str[ans+1] == str[0])) { // double quotes
+	    ans += 2;
+	    j = str.substring(ans).indexOf(str[0]);
+	    ans = ans + j;
+	    if (j < 0) ans = str.length; // Missing matching quote, default to full string.
+	}
+	
+	ans++; // move to first char of next word
+
+
+    } else if (isFunction(str)) {
+    	var qu = null;
+    	ans = 1;
+    	// Find a ")" that is not inside quotes.
+    	while ((ans < str.length) && (str[ans] != ')') && (qu == null)) {
+
+    	    if ((str[ans] == "'") || (str[ans] == '"')) {
+    	    	if (qu == null) qu = str[i];
+    	    	else if (str[ans] == qu) qu = null;
+    	    }
+    	    ans++;    	    
+    	}
+    	ans++;
+    	
+    } else {
+    	ans = -1;
+    	for (var i in sep) {
+    	    var x = str.indexOf(sep[i]);
+    	    if (( x > 0) && ((x < ans) || (ans == -1))) ans = x;
+    	}
+	if (ans < 0) { // last word
+	    ans = str.length;
+	}
+    }
+
+    return ans;
+}
+
+////////////////////////////////////
+function ltrim (str) {
+    while ((str.length > 0) && ((str[0] == ' ') || (str[0] == '\t'))) str = str.substring(1);
+    return str;
+}
+
+////////////////////////////////////
+function rtrim (str) {
+    while ((str.length > 0) && ((str[str.length-1] == ' ') || (str[str.length-1] == '\t'))) str = str.substring(0, str.length-1);
+    return str;
+}
+
+////////////////////////////////////
+// Extract the next word 
+// ord is the start of the next word.
+function nextWord(str, ord) {
+    var word = str.substring(0, ord);
+
+    if ((word[0] == "'") || (word[0] == '"')) {
+	var qchar=word[0];
+	word = word.substring(1);
+	word = word.substring(0, word.length-1);
+	if (qchar == "'") word = word.replace(/''/g, "'");
+	else word = word.replace(/""/g, '"');
+    }
+    return word;
+}
+
+////////////////////////////////////
+// Take a variable and expand it.
+function expandVariables(nodes, prop1, prop2) {
+
+    for (var i in nodes) {
+    	if (nodes[i].type == 'const') {
+    	    // do nothing
+	} else if (nodes[i].type == 'var') {
+	
+	    if (isFunction(nodes[i].value)) { // Function
+		//console.log('ev: function nodes is ' + nodes[i].value);
+		nodes[i].type = 'func';
+		nodes[i].arguments = getFunctionArguments(nodes[i].value, nodes[i].pos);
+		var j = nodes[i].value.indexOf('(');
+		nodes[i].function = nodes[i].value.substring(0, j);
+		
+	    } else { // variable
+		var p = getPropertyValue(prop1, prop2, nodes[i].value);
+		if (p == null) {
+		    console.log("Error: Property " + nodes[i].value + " not found.");
+		    // TODO Improve
+		    nodes[i].value = "";
+		    nodes[i].type = "const";
+		} else {
+		    nodes[i].value = parseString(p, nodes[i].pos, 0);
+	            nodes[i].type = 'xvar';
+	        }
+		//console.log("ev: prop " + nodes[i].value + " = " + p);
+	    }
+	} else if (nodes[i].type == 'xvar') {
+	    //console.log("Expanding " + JSON.stringify(nodes[i].value, null, 2));
+	    nodes[i].value = expandVariables(nodes[i].value, prop1, prop2);
+	    
+	} else if (nodes[i].type == 'func') {
+	    nodes[i].arguments = expandVariables(nodes[i].arguments, prop1, prop2);
+	
+	} else { // nested array
+	    console.log(JSON.stringify(nodes[i], null, 2));
+	    console.log("**** Nested array not allowed***");
+	}
+    }
+
+    return nodes;
+}
+
+////////////////////////////////////
+function getPropertyValue(prop1, prop2, propName) {
+    var ans = "";
+    
+    var props = propName.split(".");
+    if (prop1) {
+        ans = prop1;
+        for (var i in props) {
+            ans = ans[props[i]];
+            if (ans == null) break;
+        }
+    }
+    if (prop2 && (ans == null)) {
+        ans = prop2;
+        for (var i in props) {
+            ans = ans[props[i]];
+            if (ans == null) break;
+        }
+    }
+		
+    //console.log("getPropertyValue: propName is " + propName + ".  Returning " + ans);
+    return ans;
+}
+
+////////////////////////////////////
+// Extract arguments to a function.
+function getFunctionArguments(str, pos) {
+    //console.log("L4: getFunctionArgs");
+    var ans = [];
+    str = rtrim(str);
+    var i = str.indexOf("(");
+    str = ltrim(str.substring(i+1));
+    
+    str = str.substring(0, str.length-1);
+    //console.log("l4 fcn: args: '" + str + "'");
+    
+    while (str.length > 0) {
+        i = nextWordOrd(str, ",");
+        var qchar = null;
+    	if ((str[0] == "'") || (str[0] == '"')) qchar=str[0];
+	
+        var word = nextWord(str, i);
+        
+        var node = {};
+	node.value = word;
+	node.op = ",";
+	node.pos = pos;
+	if (qchar != null) node.type = 'const';
+	else node.type = 'var';
+	ans.push(node);
+	
+        str = ltrim(str.substring(i+1)); 
+        //console.log("l4: Remaining: " + str);
+    }  
+    return ans;
+}
+
+//////////////////////////////////////////////////////////////////////////
+// Reconstitution section
+//////////////////////////////////////////////////////////////////////////
+
+
+////////////////////////////////////
+function collapseData(nodes) {
+    var ans = "";
+
+    // Collapse sub-data structures to constants
+    for (var i = 0; i < nodes.length; i++) {
+        var nodei = nodes[i];
+        
+        if (nodei.type == "const") {
+            // do nothing
+        } else if (nodei.type == "xvar") {
+            //console.log("collapseData: xvar: " + JSON.stringify(nodei, null, 2));  
+            nodei.value = collapseData(nodei.value);
+            nodei.type = 'const';
+            //console.log("collapseData: result is " + JSON.stringify(nodei, null, 2));
+            
+        } else if (nodei.type == "func") {
+            //console.log("collapseData: func: " + JSON.stringify(nodei, null, 2));  
+            
+            for (var j in nodei.arguments) {
+
+            	if (nodei.arguments[j].type == "const") {
+            	    // Do nothing
+            	} else if (nodei.arguments[j].type == "xvar") {
+            	    nodei.arguments[j].value = collapseData(nodei.arguments[j].value);
+            	    nodei.arguments[j].type = 'const';
+            	}
+            }
+            nodei.value = callFunction(nodei);
+            nodei.type = 'const';
+            delete nodei.arguments;
+            delete nodei.function;
+            //console.log("collapseData: result is " + JSON.stringify(nodei, null, 2));
+        }
+    }
+    
+    // Process into a string
+    for (var i = 0; i < nodes.length; i++) {
+        var nodei = nodes[i];
+                     
+        if ((nodei.op == '+')  || (nodei.op == "")) {
+            ans += nodei.value;
+            
+        } else if (nodei.op == '?') {
+            //console.log("Current value: " + ans);
+            //console.log("Full tree " + i + ": " + JSON.stringify(nodes, null, 2));
+            
+            var va;
+            if ((nodes[i+1]) && (nodes[i+1].op == ":")) {
+                va = evalExpression(nodes[i-1], nodei, nodes[i+1], nodes[i+2]);
+                i += 2;
+            } else {
+                va = evalExpression(nodes[i-1], nodei, nodes[i+1], null);
+                i++;
+            }
+            
+            if (va) {
+                if (va.op.length <= 1) {
+                    ans += va.value;
+                } else i--;
+            }
+            
+            i++;
+        } else if ((nodei.op == "==") || (nodei.op == "!=") || (nodei.op == ">") || (nodei.op == "<")) {
+            // DO Nothing
+        } else {
+            // TODO: Improve
+            console.log("Illegal operator " + nodei.op + " at " + nodei.pos);
+        }
+    }
+    
+    return ans;
+}
+////////////////////////////////////
+
+function evalExpression(node1, node2, node3, node4) {
+    var ans;
+    
+    if (node1.op == "==") {
+
+	var isEqual = false;
+	var isNumber = (! isNaN(node1.value));
+	if (isNumber) isNumber = (! isNaN(node2.value));
+	
+	if (isNumber) {
+	    isEqual = (parseInt(node1.value) == parseInt(node2.value));
+	} else {
+	    isEqual = (("" + node1.value) == ("" + node2.value));
+	    //console.log("evalExpression: " + node1.value + " == " + node2.value + " is " + isEqual);
+	}
+	
+        if (isEqual) {
+            ans = node3;
+            //console.log("evalExpression: Ans is: " + JSON.stringify(ans, null, 2));
+        } else {
+            ans = node4;
+	}
+    } else if (node1.op == "!=") {
+
+	var isNotEqual = false;
+	var isNumber = (! isNaN(node1.value));
+	if (isNumber) isNumber = (! isNaN(node2.value));
+	
+	if (isNumber) {
+	    isNotEqual = (parseInt(node1.value) != parseInt(node2.value));
+	} else {
+	    isNotEqual = (("" + node1.value) != ("" + node2.value));
+	    //console.log("evalExpression: " + node1.value + " != " + node2.value + " is " + isNotEqual);
+	}
+	
+        if (isNotEqual) {
+            ans = node3;
+            //console.log("evalExpression: Ans is: " + JSON.stringify(ans, null, 2));
+        } else {
+            ans = node4;
+	}
+    } else if (node1.op == ">") {
+
+	var isGreater = false;
+	var isNumber = (! isNaN(node1.value));
+	if (isNumber) isNumber = (! isNaN(node2.value));
+	
+	if (isNumber) {
+	    isGreater = (parseInt(node1.value) > parseInt(node2.value));
+	} else {
+	    isGreater = (("" + node1.value) > ("" + node2.value));
+	    //console.log("evalExpression: " + node1.value + " > " + node2.value + " is " + isGreater);
+	}
+	
+        if (isGreater) {
+            ans = node3;
+            //console.log("evalExpression: Ans is: " + JSON.stringify(ans, null, 2));
+        } else {
+            ans = node4;
+	}
+    } else if (node1.op == "<") {
+
+	var isLessThan = false;
+	var isNumber = (! isNaN(node1.value));
+	if (isNumber) isNumber = (! isNaN(node2.value));
+	
+	if (isNumber) {
+	    isLessThan = (parseInt(node1.value) < parseInt(node2.value));
+	} else {
+	    isLessThan = (("" + node1.value) < ("" + node2.value));
+	    //console.log("evalExpression: " + node1.value + " < " + node2.value + " is " + isLessThan);
+	}
+	
+        if (isLessThan) {
+            ans = node3;
+            //console.log("evalExpression: Ans is: " + JSON.stringify(ans, null, 2));
+        } else {
+            ans = node4;
+	}
+    } else {
+        console.log("Illegal conditional operator " + node1.op + " at " + nodei.pos);
+    }// TODO: else throw exception - illegal comparison operator
+    
+    return ans;
+}
+
+////////////////////////////////////
+function isFunction(str) {
+    if (str.indexOf("to_lower") == 0) {
+	return true;
+    } else if (str.indexOf("to_upper") == 0) {
+	return true;
+    }
+    return false;
+}
+
+////////////////////////////////////
+function callFunction(nodei) {
+    if (nodei.function == 'to_lower') {
+        return fcn_to_lower(nodei);
+    } else if (nodei.function == 'to_upper') {
+        return fcn_to_upper(nodei);
+    }
+}
+
+////////////////////////////////////
+function fcn_to_lower(nodei) {
+    //console.log("fcn:to_lower: " + JSON.stringify(nodei, null, 2));
+    //console.log("fcn:to_lower: value is " + nodei.arguments[0].value);
+    return nodei.arguments[0].value.toLowerCase();
+}
+
+////////////////////////////////////
+function fcn_to_upper(nodei) {
+    return nodei.arguments[0].value.toUpperCase();
+}]]></script>
+</dunes-script-module>

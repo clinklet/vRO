@@ -1,0 +1,24 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<dunes-script-module name="logContext" result-type="void" api-version="6.0.0" id="8cd9092a-8aad-4f5e-b764-a20631ac01a0" version="0.1.0" category-name="community.utility.log">
+  <description><![CDATA[Log the current execution context.]]></description>
+  <script encoded="false"><![CDATA[/*
+Version Date    Developer
+    Description of change
+
+0.0.2 Dec 18, 2021    Carl Linkletter
+	Initial
+*/
+
+if (! logLevel) logLevel = 2;
+
+if (! logModule) logModule = "unknown";
+
+System.getModule("community.log").logDebug(logModule, logLevel, "Start: ------- Context Log Start --------------------------");
+var ctx = System.getContext();
+var keys = ctx.parameterNames()
+for each (var key in keys) {
+    System.getModule("community.log").logDebug(logModule, logLevel, key + " = " + ctx.getParameter(key));
+}
+System.getModule("community.log").logDebug(logModule, logLevel, "End: ------- Context Log End --------------------------");
+]]></script>
+</dunes-script-module>

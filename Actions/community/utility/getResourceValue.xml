@@ -1,0 +1,95 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<dunes-script-module name="getResourceValue" result-type="Any" api-version="6.0.0" id="52a04e68-2ad3-4f48-a313-8e7307ac5e75" version="0.1.0" category-name="community.utility">
+  <description><![CDATA[Get the value of a resource element.
+Returns null if the element is not found.]]></description>
+  <param n="resourceElementName" t="string"><![CDATA[The resource element name or path]]></param>
+  <script encoded="false"><![CDATA[/*
+Version Date    Developer
+    Description of change
+
+0.0.2 Dec 18, 2021    Carl Linkletter
+    Initial
+*/
+
+System.getModule("community.utility.log").logDebug("community.utilities", 1, "START: getResourceValue " + resourceElementName);
+
+var resourceElement = null;
+
+// If a Resource Element path was specified
+if (resourceElementName.indexOf("/") >= 0) {
+    System.getModule("community.utility.log").logDebug("community.utilities", 2, "Getting resource element using specified path.");
+
+   	if (resourceElementName.charAt(0) == "/") { // Remove leading / if specified
+	    resourceElementName = resourceElementName.substring(1);
+	}
+
+	var i = resourceElementName.lastIndexOf("/");
+	if (i < 0) {
+		throw "Illegal Resource Element path: " + resourceElementName;
+	}
+
+	var resourceElementNamePath = resourceElementName.substring(0, i);
+	var resourceElementNameName = resourceElementName.substring(i+1);
+	
+	var resourceCategory = Server.getResourceElementCategoryWithPath(resourceElementNamePath);
+	
+	if(!resourceCategory) {
+		throw "Resource element folder \"" + resourceElementNamePath + "\" not found.";
+	}
+	
+	var resourceElement = null;
+		
+	// for each configuration element
+	for each (var re in resourceCategory.resourceElements) {
+		if(resourceElementNameName == re.name) {
+			resourceElement = re;
+			break;
+		}
+	}
+
+// Just the config element, do a search
+} else {
+    System.getModule("community.utility.log").logDebug("community.utilities", 2, "Searching for resource element.");
+
+    var resourceElementCategories = Server.getAllResourceElementCategories();
+
+    // Search for the config element specified
+    function search(resourceCategory) {
+        for each (var re in resourceCategory.resourceElements) {
+            if (re.name == resourceElementName) return re;
+        } 
+
+        var ans;
+        for each (var rec in resourceCategory.subCategories) {
+            ans = search(rec);
+            if (ans != null) return ans;
+        }
+
+    }
+
+    for each (var rec in resourceElementCategories) {
+        resourceElement = search(rec);
+        if (resourceElement != null) break;
+
+    }
+}
+
+// Process the results of the lookup
+if (resourceElement == null) {
+	System.warn("Cannot find the resource element " + resourceElementName);
+    System.getModule("community.utility.log").logDebug("community.utilities", 1, "END: getResourceValue " + resourceElementName + " not found.");
+    return null;
+}
+
+// get the content
+var content = resourceElement.getContentAsMimeAttachment();
+if (!content) { // resource not found
+    System.getModule("community.utility.log").logDebug("community.utilities", 1, "END: getResourceValue " + resourceElementName + " is empty.");
+	return null;
+}
+
+System.getModule("community.utility.log").logDebug("community.utilities", 1, "END: getResourceValue " + resourceElementName);
+
+return content.content;
+]]></script>
+</dunes-script-module>

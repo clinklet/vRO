@@ -1,0 +1,57 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<dunes-script-module name="getNextSequenceNumber" result-type="number" api-version="6.0.0" id="5fd1baf9-d866-4253-af5b-50405abec0d2" version="0.1.0" category-name="community.utility">
+  <description><![CDATA[Get the next number in a sequence in a vRO cluster safe way.  Requires a configuration element "Sequences" to exist.]]></description>
+  <param n="sequenceName" t="string"><![CDATA[Sequence name]]></param>
+  <param n="autoCreate" t="boolean"><![CDATA[Optional: If sequence is not found, should it be created with an initial value of 1.  Default is false.]]></param>
+  <script encoded="false"><![CDATA[/*
+Version Date    Developer
+    Description of change
+
+0.0.3 Dec 18, 2021    Carl Linkletter
+	Initial
+*/
+
+System.getModule("community.utility.log").logDebug("community.utility", 1, "Start: getNextSequenceNumber: " + sequenceName);
+
+if (! autoCreate) autoCreate = false;
+
+var configElement = null;
+var ans = null;
+var path = "Sequences";
+var lock="Community_ConfigElement/" + path;
+var owner = System.nextUUID();
+
+var configElement = System.getModule("community.utility").findConfigurationElement(path);
+
+if (configElement == null) {
+	throw "Configuration element '" + path + "' not found.";
+}
+
+// Lock affinity group to ensure another cluster is not doing the same thing at the same time.
+try {
+    System.getModule("community.utility.log").logDebug("community.utility", 2, 'Acquiring lock "' + lock + '"');
+	LockingSystem.lockAndWait(lock, owner);
+    System.getModule("community.utility.log").logDebug("community.utility", 3, 'Acquiring lock "' + lock + '" acquired.');
+	
+	configElement.reload(); // flush vRO Config Element cache
+	
+	var attr = configElement.getAttributeWithKey(sequenceName);
+	if (attr == null) {
+        if (! autoCreate) throw "No key found with name " + sequenceName + " in path " + path;
+        ans = 1;
+    } else {
+	    ans = attr.value;
+    }
+
+	configElement.setAttributeWithKey(sequenceName, (ans+1), "number");
+	
+} finally {
+	LockingSystem.unlock(lock, owner);
+    System.getModule("community.utility.log").logDebug("community.utility", 2, 'Lock "' + lock + '" released');
+}
+
+System.getModule("community.utility.log).logDebug("community.utility", 1, "END: getNextSequenceNumber: " + sequenceName + " = " + ans);
+
+return ans;
+]]></script>
+</dunes-script-module>

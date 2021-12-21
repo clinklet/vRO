@@ -1,0 +1,79 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<dunes-script-module name="findConfigurationElement" result-type="ConfigurationElement" api-version="6.0.0" id="e4b36954-1d74-4cb3-8f0a-e1b808bb3dbf" version="0.1.0" category-name="community.utility">
+  <description><![CDATA[Search for a configuration element.  The absolute path (with or without leading /) may be specified or just the CE name and the first find is returned.]]></description>
+  <param n="configElementName" t="string"><![CDATA[The CE sought. If it has a / in the name, then that is the absolute path.  If not, then search for it.]]></param>
+  <script encoded="false"><![CDATA[/*
+Version Date    Developer
+    Description of change
+
+0.0.3  Dec 18, 2021    Carl Linkletter
+    Initial
+*/
+
+var configurationElement = null;
+
+// A config element path was specified
+if (configElementName.indexOf("/") >= 0) {
+
+    // If it starts with a slash, remove it
+   	if (configElementName.charAt(0) == "/") {
+	    configElementName = configElementName.substring(1);
+	}
+    
+    // if it ends with a slash, remove it
+    if (configElementName.lastIndexOf('/') == (configElementName.length - 1)) {
+        configElementName = configElementName.substring(0, configElementName.lastIndexOf('/'));
+    }
+    
+	var i = configElementName.lastIndexOf("/");
+	if (i < 0) {
+		throw "Illegal Configuration Element path: " + configElementName;
+	}
+	var configurationElementCategoryPath = configElementName.substring(0, i);
+	var configurationElementName = configElementName.substring(i+1);
+	
+	var configurationCategory = Server.getConfigurationElementCategoryWithPath(configurationElementCategoryPath);
+	
+	if(!configurationCategory) {
+		throw 'Bad configuration path "' + configElementName + '"';
+	}
+	
+	var configurationElement = null;
+		
+	// for each configuration element
+	for each (var ce in configurationCategory.configurationElements) {
+		if(configurationElementName == ce.name) {
+			configurationElement = ce;
+			break;
+		}
+	}
+
+// Just the config element, do a search
+} else {
+    var configurationCategories = Server.getAllConfigurationElementCategories();
+
+    // Search for the config element specified
+    function search(configCategory) {
+        for each (var ce in configCategory.configurationElements) {
+
+            // If parent is solution, then return it
+            if (ce.name == configElementName) return ce;
+        }
+
+        var ans;
+        for each (var cec in configCategory.subCategories) {
+            ans = search(cec);
+
+            // Else if one of the children is the solution, return it.
+            if (ans != null) return ans;
+        }
+
+    }
+    for each (var ce in configurationCategories) {
+        configurationElement = search(ce);
+        if (configurationElement != null) return configurationElement;
+    }
+}
+
+return configurationElement;]]></script>
+</dunes-script-module>

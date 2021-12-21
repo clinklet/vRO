@@ -1,0 +1,41 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<dunes-script-module name="setConfigurationValue" result-type="void" api-version="6.0.0" id="ddb08fb9-d728-40c3-857d-53271050772f" version="0.1.0" category-name="community.utility">
+  <description><![CDATA[Set the value of a configuration element.  
+Note:  This is NOT vRO cluster safe.  Throws an exception if CE not found -or- attribute not found and typeHint not specified.]]></description>
+  <param n="configElementName" t="string"><![CDATA[The CE sought. If it has a / in the name, then that is the absolute path.  If not, then search for it.]]></param>
+  <param n="attributeName" t="string"><![CDATA[Attribute name]]></param>
+  <param n="value" t="Any"><![CDATA[Value to be set]]></param>
+  <param n="typeHint" t="string"><![CDATA[If set, then the attribute may be auto-created with this data type]]></param>
+  <script encoded="false"><![CDATA[/*
+Version Date    Developer
+    Description of change
+
+0.0.2 Dec 18, 2021    Carl Linkletter
+    Initial
+*/
+
+// Note:  The normal START/END lines are not here because this action is used by logDebug() action.
+
+System.getModule("community.utility.log").logDebug("community.utilities", 1, "START: setConfigurationValue " + configElementName + "/" + attributeName);
+
+var configurationElement = System.getModule("community.utility").findConfigurationElement(configElementName);
+
+// Process the results of the lookup
+if (configurationElement == null) {
+	throw new Error("Cannot find the configuration element " + configElementName);
+}
+
+// Process the attribute being sought
+var test = configurationElement.getAttributeWithKey(attributeName);
+
+if ((!test) && (!typeHint)) { // Attribute not found
+    throw "Configuration attribute not found: " + configElementName + ", " + attributeName;
+}
+if (typeHint) {
+    configurationElement.setAttributeWithKey(attributeName, value, typeHint);
+} else {
+    configurationElement.setAttributeWithKey(attributeName, value);
+}
+System.getModule("community.utility.log").logDebug("community.utilities", 1, "END: setConfigurationValue " + configElementName + "/" + attributeName);
+]]></script>
+</dunes-script-module>

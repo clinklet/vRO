@@ -1,0 +1,35 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<dunes-script-module name="logDebug" result-type="string" api-version="6.0.0" id="a822003a-6311-43ea-8f38-77301c0050f7" version="0.1.0" category-name="community.utility.log">
+  <description><![CDATA[Conditionally log debug messages.  This action allows for debug messages to be increased on a per workflow/action basis.]]></description>
+  <param n="module" t="string"><![CDATA[Area being logged for.  Default is "unknown".]]></param>
+  <param n="level" t="number"><![CDATA[Level to log at.  Default is 1]]></param>
+  <param n="message" t="string"><![CDATA[Message to be conditionally logged.]]></param>
+  <script encoded="false"><![CDATA[/*
+Version Date    Developer
+    Description of change
+
+0.0.2 Dec 18, 2021    Carl Linkletter
+    Initial
+*/
+
+/*
+Level 1 - Normal production debug level logging
+Level 2 - Broad troubleshooting
+Level 3 - Verbose troubleshooting
+Level 4 - Maximum logs.
+*/
+
+if ((level <= 0) && (level > 4)) throw "logDebug: Level out of range (1..4). Value is " + level;
+
+module = module.replace(/[ .]/g, "_"); // Replace most common illegal variable characters with underscore
+
+var setLevel = 1; // default level
+
+try {  // never blow up, even if the config element is not there.  This is debug code :-)
+    setLevel = System.getModule("community.utilities").getConfigurationValue("LogDebug", module);
+} catch (e) {
+    System.warn('Configuration element "LogDebug" not found.');
+}
+
+if (setLevel >= level) System.debug(message);]]></script>
+</dunes-script-module>
