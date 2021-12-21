@@ -1,0 +1,39 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<dunes-script-module name="getConfigurationValue" result-type="Any" api-version="6.0.0" id="46ff40fc-3ce9-4dd7-a060-9b148f29934e" version="0.1.0" category-name="community.utility">
+  <description><![CDATA[Get the value of an attribute in a configuration element.  Returns null if attribute is not found.  Throws an exception if CE is not found or if attribute value is unset.]]></description>
+  <param n="configElementName" t="string"><![CDATA[Configuration element (name or path) where attribute is located.]]></param>
+  <param n="attributeName" t="string"><![CDATA[Attribute name]]></param>
+  <param n="silent" t="boolean"><![CDATA[Optional.  Log if attribute is not found.]]></param>
+  <script encoded="false"><![CDATA[/*
+Version Date    Developer
+    Description of change
+
+0.0.2   Dec 18, 2021    Carl Linkletter
+    Initial
+*/
+// If silent not provided, then assume not.
+if (! silent) silent = false;
+
+var configurationElement = System.getModule("community.utility").findConfigurationElement(configElementName);
+
+// Process the results of the lookup
+if (configurationElement == null) {
+	throw new Error("Cannot find the configuration element " + configElementName);
+}
+
+// Process the attribute being sought
+var ans = configurationElement.getAttributeWithKey(attributeName);
+if (!ans) { // Attribute not found
+    if (!silent) System.warn("Attribute not found - " + attributeName);
+	return null;
+    
+} else if (ans.value == null) {  // attribute is not allowed to have a null value
+	throw "Attribute " + attributeName + " has a null value in config element " + configElementName;
+    
+} else if (ans.value == "notfound") { // attribute used to have an inventory value but no longer does
+	throw "Attribute " + attributeName + " has a value which is unset in config element " + configElementName;
+}
+
+return ans.value;
+]]></script>
+</dunes-script-module>
