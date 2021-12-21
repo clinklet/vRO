@@ -1,0 +1,49 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<dunes-script-module name="logProperties" result-type="void" api-version="6.0.0" id="f1262310-9551-4650-82a6-ac5644f03025" version="0.1.0" category-name="community.utility.log">
+  <description><![CDATA[Log a properties object.  For example, the inputProperites.]]></description>
+  <param n="inputProperties" t="Properties"><![CDATA[The object whose value is to be logged]]></param>
+  <param n="logModule" t="string"><![CDATA[Area being logged for.  Default is "unknown".]]></param>
+  <param n="logLevel" t="number"><![CDATA[Level to log at.  Default is 2.]]></param>
+  <script encoded="false"><![CDATA[/*
+Version Date    Developer
+    Description of change
+
+0.0.4 Dec 18, 2021    Carl Linkletter
+    Initial
+*/
+
+// Log the payload, increasing the indentation as it goes deeper. 
+// This is a recursive function.
+function logDeeper(prefix, payload) {
+
+	var keys = payload.keys.sort();
+
+	var val;
+	for (var i=0; i < keys.length; i++) {
+		val = payload.get(keys[i]);
+		if (val instanceof Properties) {
+			System.getModule("community.log").logDebug(logModule, logLevel, prefix + keys[i] + " ->");
+			logDeeper(prefix + "   ", val);
+        } else if (Array.isArray(val)) {
+            System.getModule("community.log").logDebug(logModule, logLevel, prefix + keys[i] + " = " + val.join(","))
+		} else {
+		    System.getModule("community.log").logDebug(logModule, logLevel, prefix + keys[i] + " = " + val);
+		}
+	}
+}
+
+if (! logLevel) logLevel = 2;
+
+if (! logModule) logModule = "unknown";
+
+System.getModule("community.log").logDebug(logModule, logLevel, "Start: ------- Property Log Start --------------------------");
+
+if (inputProperties == null) {
+    System.getModule("community.log").logDebug(logModule, logLevel, "null props")
+} else {
+    logDeeper("", inputProperties);
+}
+
+System.getModule("community.log").logDebug(logModule, logLevel, "End: ------- Property Log End --------------------------");
+]]></script>
+</dunes-script-module>
