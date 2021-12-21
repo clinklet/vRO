@@ -1,0 +1,95 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<dunes-script-module name="setResourceValue" result-type="void" api-version="6.0.0" id="40cca4d7-7e66-4cec-8af1-6e98c5023af4" version="0.1.0" category-name="community.utility">
+  <description><![CDATA[Set the value on a Resource Element.  Throws an exception if the element is not found.]]></description>
+  <param n="resourceElementName" t="string"><![CDATA[Name or Path to the resource element]]></param>
+  <param n="value" t="string"><![CDATA[Value to set in resource element]]></param>
+  <param n="mimeType" t="string"><![CDATA[Mime type of the content]]></param>
+  <script encoded="false"><![CDATA[/*
+Version Date    Developer
+    Description of change
+
+0.0.1 Dec 18, 2021    Carl Linkletter
+    Initial
+*/
+System.getModule("community.utility.log").logDebug("community.utility.log", 1, "START: setResourceValue " + resourceElementName);
+
+var resourceElement = null;
+
+// If a Resource Element path was specified
+if (resourceElementName.indexOf("/") >= 0) {
+    System.getModule("community.utility.log").logDebug("community.utility.log", 2, "Getting resource element using specified path.");
+
+   	if (resourceElementName.charAt(0) == "/") { // Remove leading / if specified
+	    resourceElementName = resourceElementName.substring(1);
+	}
+
+	var i = resourceElementName.lastIndexOf("/");
+	if (i < 0) {
+		throw "Illegal Resource Element path: " + resourceElementName;
+	}
+
+	var resourceElementNamePath = resourceElementName.substring(0, i);
+	var resourceElementNameName = resourceElementName.substring(i+1);
+	
+	var resourceCategory = Server.getResourceElementCategoryWithPath(resourceElementNamePath);
+	
+	if (!resourceCategory) {
+		throw 'Bad resource folder "' + resourceElementNamePath + '"';
+	}
+	
+	var resourceElement = null;
+		
+	// for each configuration element
+	for each (var re in resourceCategory.resourceElements) {
+		if(resourceElementNameName == re.name) {
+			resourceElement = re;
+			break;
+		}
+	}
+
+// Just the config element, do a search
+} else {
+    System.getModule("community.utility.log").logDebug("community.utility.log", 2, "Searching for resource element.");
+
+    var resourceElementCategories = Server.getAllResourceElementCategories();
+
+    // Search for the config element specified
+    function search(resourceCategory) {
+        for each (var re in resourceCategory.resourceElements) {
+            if (re.name == resourceElementName) return re;
+        } 
+
+        var ans;
+        for each (var rec in resourceCategory.subCategories) {
+            ans = search(rec);
+            if (ans != null) return ans;
+        }
+
+    }
+    
+    for each (var rec in resourceElementCategories) {
+        resourceElement = search(rec);
+        if (resourceElement != null) break;
+
+    }
+
+    if (resourceElement == null) throw "Unable to find ResourceElement " +  resourceElementName + ". Cannot set value.";
+
+}
+
+var data = new MimeAttachment();
+data.content = value;
+data.mimeType = mimeType;
+
+if (resourceElement == null) {
+    System.log("Setting " + resourceElementNamePath + ", element " + resourceElementNameName)
+    Server.createResourceElement(resourceElementNamePath, resourceElementNameName, data);
+} else {
+    System.log("Updating " + resourceElementNamePath + ", element " + resourceElementNameName)
+
+    resourceElement.setContentFromMimeAttachment(data);
+}
+
+System.getModule("community.utility.log").logDebug("community.utility.log", 1, "END: setResourceValue " + resourceElementName);
+]]></script>
+</dunes-script-module>
