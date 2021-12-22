@@ -1,11 +1,17 @@
 <?xml version='1.0' encoding='UTF-8'?>
-<dunes-script-module name="expandString" result-type="string" api-version="6.0.0" id="14efe3f2-9d86-46b7-ba24-a2cc16c54a25" version="0.0.2" category-name="community.utility">
+<dunes-script-module name="expandStringJS" result-type="string" api-version="6.0.0" id="b71ccb8b-fab1-4131-a88e-397bc4220b18" version="0.0.1" allowed-operations="vfe" category-name="community.utility">
   <description><![CDATA[Scan a string for variable references and expand them to their values.]]></description>
+  <runtime><![CDATA[node:12]]></runtime>
   <param n="inputString" t="string"><![CDATA[String to be expanded]]></param>
   <param n="prop1" t="Properties"><![CDATA[Primary source of variables]]></param>
   <param n="prop2" t="Properties"><![CDATA[Optional secondary source of variables]]></param>
   <script encoded="false"><![CDATA[
-return main(inputString, prop1, prop2);
+exports.handler = (context, inputs, callback) => {
+    console.log('Inputs were ' + JSON.stringify(inputs));
+    return main(inputs.inputString, inputs.prop1, inputs.prop2);
+    callback(undefined, {status: "done"});
+}
+
 
 function main(str, prop1, prop2) {
 
@@ -33,20 +39,19 @@ function main(str, prop1, prop2) {
 		< - Compare two values for less than.  Does numeric comparison if both values are numbers.
 		
 	*/
-    //System.log("Input: " + str);
-    
-	//System.log("### First Pass");
-	var ans = parseString(str, "", 0);
-	//System.log("Pass 1 results: " + JSON.stringify(ans, null, 2));
 
-	//System.log("### Second Pass");
+	//console.log("### First Pass");
+	var ans = parseString(str, "", 0);
+	//console.log("Pass 1 results: " + JSON.stringify(ans, null, 2));
+
+	//console.log("### Second Pass");
 	// Expand variables and functions
 	ans = expandVariables(ans, prop1, prop2);
-	//System.log("Pass 2 results: " + JSON.stringify(ans, null, 2));
+	//console.log("Pass 2 results: " + JSON.stringify(ans, null, 2));
 
-	//System.log("### Third pass");
+	//console.log("### Third pass");
 	ans = expandVariables(ans, prop1, prop2);
-	//System.log("Pass 3 results: " + JSON.stringify(ans, null, 2));
+	//console.log("Pass 3 results: " + JSON.stringify(ans, null, 2));
 
 
 	return collapseData(ans);
@@ -67,22 +72,22 @@ function parseString(str, npos, pos) {
     while (runstr.length > 0) {
         if (runstr.indexOf(token) == 0) { // var call
             var i = runstr.indexOf(endToken) + 1;
-	        var s = runstr.substring(0, i);
-	        runstr = runstr.substring(i);
-	        s = s.substring(token.length);
-	        s = s.substring(0, s.length - endToken.length);
+	    var s = runstr.substring(0, i);
+	    runstr = runstr.substring(i);
+	    s = s.substring(token.length);
+	    s = s.substring(0, s.length - endToken.length);
     	    
     	    node = {};
-	        node.op = "+";
- 	        node.type = 'xvar'; // value is an array of elements
-	        node.pos = "" + pos;
-	        node.value = parseVariable(s, npos, pos);
+	    node.op = "+";
+ 	    node.type = 'xvar'; // value is an array of elements
+	    node.pos = "" + pos;
+	    node.value = parseVariable(s, npos, pos);
     
-	        parsed.push(node);
-	        pos += i;
+	    parsed.push(node);
+	    pos += i;
     
         } else { // literal string
-	        var node = {};
+	    var node = {};
             var i = runstr.indexOf(token);
 	    
 	    // Take all text up to ${ but that does not include \${
@@ -120,7 +125,6 @@ function parseVariable(str, npos, pos) {
     var ans = [];
     var parserChar = " ";
     
-    //System.log("parseVariable: in: " + str);
     str = ltrim(str);
     str = rtrim(str);
 
@@ -129,35 +133,35 @@ function parseVariable(str, npos, pos) {
         if ((str[0] == "'") || (str[0] == '"')) qchar = str[0];
 
         var i = nextWordOrd(str, parserChar);
-	    var i2 = 0;
+	var i2 = 0;
         word = nextWord(str, i);
         str = ltrim(str.substring(i));
-	    var op = "";
+	var op = "";
 
-	    if (str.length > 0) { // Get operator
-	        i2 = nextWordOrd(str, parserChar);
-	        op = nextWord(str, i2);
+	if (str.length > 0) { // Get operator
+	    i2 = nextWordOrd(str, parserChar);
+	    op = nextWord(str, i2);
             str = ltrim(str.substring(i2));
             if (op != "+") parserChar = " ?:";
-	    }
-	    var node = {};
-	    node.value = word;
-	    node.op = op;
-	    node.pos = (npos == "")? "" + pos : npos + "." + pos;
+	}
+	var node = {};
+	node.value = word;
+	node.op = op;
+	node.pos = (npos == "")? "" + pos : npos + "." + pos;
 
-	    if (qchar != null) {
-	        node.type = 'const';
-	    } else {
-	        if (isNaN(word)) node.type = 'var';
-	        else node.type = 'const';
-	    }
+	if (qchar != null) {
+	    node.type = 'const';
+	} else {
+	    if (isNaN(word)) node.type = 'var';
+	    else node.type = 'const';
+	}
 
-	    pos += i + i2;
-	    ans.push(node);
+	pos += i + i2;
+	ans.push(node);
    
 
-        //System.log('parseVariable: str="' + str + '"');
-        //System.log('parseVariable: word="' + word + '"');
+        //console.log('l2: str="' + str + '"');
+        //console.log('l2: word="' + word + '"');
     }
     return ans;
 }
@@ -166,22 +170,22 @@ function parseVariable(str, npos, pos) {
 // Get the starting ordinal (position) of the next word
 function nextWordOrd(str, sep) {
     var ans = 0;
-    //System.log('nextWordOrd: input "' + str + '", sep="' + sep + '"');
+    //console.log('nextWordOrd: input "' + str + '", sep="' + sep + '"');
 
     if ((str[0] == "'") || (str[0] == '"')) {
-	    ans = str.substring(1).indexOf(str[0]);
-
-	    if (ans < 0) ans = str.length; // Missing matching quote, default to full string.
-	    else ans++; // search above starts on first char, so add 1 more to str index.
+	ans = str.substring(1).indexOf(str[0]);
 	
-	    while ((ans < str.length-1) && (str[ans+1] == str[0])) { // double quotes
-	        ans += 2;
-	        j = str.substring(ans).indexOf(str[0]);
-	        ans = ans + j;
-	        if (j < 0) ans = str.length; // Missing matching quote, default to full string.
-	    }
+	if (ans < 0) ans = str.length; // Missing matching quote, default to full string.
+	else ans++; // search above starts on first char, so add 1 more to str index.
 	
-	    ans++; // move to first char of next word
+	while ((ans < str.length-1) && (str[ans+1] == str[0])) { // double quotes
+	    ans += 2;
+	    j = str.substring(ans).indexOf(str[0]);
+	    ans = ans + j;
+	    if (j < 0) ans = str.length; // Missing matching quote, default to full string.
+	}
+	
+	ans++; // move to first char of next word
 
 
     } else if (isFunction(str)) {
@@ -200,16 +204,15 @@ function nextWordOrd(str, sep) {
     	
     } else {
     	ans = -1;
-    	for (var i=0; i < sep.length; i++) {
+    	for (var i in sep) {
     	    var x = str.indexOf(sep[i]);
     	    if (( x > 0) && ((x < ans) || (ans == -1))) ans = x;
     	}
-	    if (ans < 0) { // last word
-	        ans = str.length;
-	    }
+	if (ans < 0) { // last word
+	    ans = str.length;
+	}
     }
 
-    //System.log("nextWordOrd: Returning: " + ans);
     return ans;
 }
 
@@ -232,11 +235,11 @@ function nextWord(str, ord) {
     var word = str.substring(0, ord);
 
     if ((word[0] == "'") || (word[0] == '"')) {
-	    var qchar=word[0];
-	    word = word.substring(1);
-	    word = word.substring(0, word.length-1);
-	    if (qchar == "'") word = word.replace(/''/g, "'");
-	    else word = word.replace(/""/g, '"');
+	var qchar=word[0];
+	word = word.substring(1);
+	word = word.substring(0, word.length-1);
+	if (qchar == "'") word = word.replace(/''/g, "'");
+	else word = word.replace(/""/g, '"');
     }
     return word;
 }
@@ -245,42 +248,42 @@ function nextWord(str, ord) {
 // Take a variable and expand it.
 function expandVariables(nodes, prop1, prop2) {
 
-    for (var i=0; i < nodes.length; i++) {
+    for (var i in nodes) {
     	if (nodes[i].type == 'const') {
     	    // do nothing
-	    } else if (nodes[i].type == 'var') {
+	} else if (nodes[i].type == 'var') {
 	
-	        if (isFunction(nodes[i].value)) { // Function
-		        //System.log('ev: function nodes is ' + nodes[i].value);
-		        nodes[i].type = 'func';
-		        nodes[i].arguments = getFunctionArguments(nodes[i].value, nodes[i].pos);
-		        var j = nodes[i].value.indexOf('(');
-		        nodes[i].function = nodes[i].value.substring(0, j);
+	    if (isFunction(nodes[i].value)) { // Function
+		//console.log('ev: function nodes is ' + nodes[i].value);
+		nodes[i].type = 'func';
+		nodes[i].arguments = getFunctionArguments(nodes[i].value, nodes[i].pos);
+		var j = nodes[i].value.indexOf('(');
+		nodes[i].function = nodes[i].value.substring(0, j);
 		
-	        } else { // variable
-		        var p = getPropertyValue(prop1, prop2, nodes[i].value);
-		        if (p == null) {
-		            System.log("Error: Property " + nodes[i].value + " not found.");
-		            // TODO Improve
-		            nodes[i].value = "";
-		            nodes[i].type = "const";
-		        } else {
-		            nodes[i].value = parseString(p, nodes[i].pos, 0);
-	                nodes[i].type = 'xvar';
-	            }
-		    //System.log("ev: prop " + nodes[i].value + " = " + p);
+	    } else { // variable
+		var p = getPropertyValue(prop1, prop2, nodes[i].value);
+		if (p == null) {
+		    console.log("Error: Property " + nodes[i].value + " not found.");
+		    // TODO Improve
+		    nodes[i].value = "";
+		    nodes[i].type = "const";
+		} else {
+		    nodes[i].value = parseString(p, nodes[i].pos, 0);
+	            nodes[i].type = 'xvar';
 	        }
-	    } else if (nodes[i].type == 'xvar') {
-	        //System.log("Expanding " + JSON.stringify(nodes[i].value, null, 2));
-	        nodes[i].value = expandVariables(nodes[i].value, prop1, prop2);
-	    
-	    } else if (nodes[i].type == 'func') {
-	        nodes[i].arguments = expandVariables(nodes[i].arguments, prop1, prop2);
-	
-	    } else { // nested array
-	        System.log(JSON.stringify(nodes[i], null, 2));
-	        System.log("**** Nested array not allowed***");
+		//console.log("ev: prop " + nodes[i].value + " = " + p);
 	    }
+	} else if (nodes[i].type == 'xvar') {
+	    //console.log("Expanding " + JSON.stringify(nodes[i].value, null, 2));
+	    nodes[i].value = expandVariables(nodes[i].value, prop1, prop2);
+	    
+	} else if (nodes[i].type == 'func') {
+	    nodes[i].arguments = expandVariables(nodes[i].arguments, prop1, prop2);
+	
+	} else { // nested array
+	    console.log(JSON.stringify(nodes[i], null, 2));
+	    console.log("**** Nested array not allowed***");
+	}
     }
 
     return nodes;
@@ -293,34 +296,34 @@ function getPropertyValue(prop1, prop2, propName) {
     var props = propName.split(".");
     if (prop1) {
         ans = prop1;
-        for (var i=0; i < props.length; i++) {
+        for (var i in props) {
             ans = ans[props[i]];
             if (ans == null) break;
         }
     }
     if (prop2 && (ans == null)) {
         ans = prop2;
-        for (var i=0; i < props.length; i++) {
+        for (var i in props) {
             ans = ans[props[i]];
             if (ans == null) break;
         }
     }
 		
-    //System.log("getPropertyValue: propName is " + propName + ".  Returning " + ans);
+    //console.log("getPropertyValue: propName is " + propName + ".  Returning " + ans);
     return ans;
 }
 
 ////////////////////////////////////
 // Extract arguments to a function.
 function getFunctionArguments(str, pos) {
-    //System.log("L4: getFunctionArgs");
+    //console.log("L4: getFunctionArgs");
     var ans = [];
     str = rtrim(str);
     var i = str.indexOf("(");
     str = ltrim(str.substring(i+1));
     
     str = str.substring(0, str.length-1);
-    //System.log("l4 fcn: args: '" + str + "'");
+    //console.log("l4 fcn: args: '" + str + "'");
     
     while (str.length > 0) {
         i = nextWordOrd(str, ",");
@@ -338,7 +341,7 @@ function getFunctionArguments(str, pos) {
 	ans.push(node);
 	
         str = ltrim(str.substring(i+1)); 
-        //System.log("l4: Remaining: " + str);
+        //console.log("l4: Remaining: " + str);
     }  
     return ans;
 }
@@ -359,15 +362,15 @@ function collapseData(nodes) {
         if (nodei.type == "const") {
             // do nothing
         } else if (nodei.type == "xvar") {
-            //System.log("collapseData: xvar: " + JSON.stringify(nodei, null, 2));  
+            //console.log("collapseData: xvar: " + JSON.stringify(nodei, null, 2));  
             nodei.value = collapseData(nodei.value);
             nodei.type = 'const';
-            //System.log("collapseData: result is " + JSON.stringify(nodei, null, 2));
+            //console.log("collapseData: result is " + JSON.stringify(nodei, null, 2));
             
         } else if (nodei.type == "func") {
-            //System.log("collapseData: func: " + JSON.stringify(nodei, null, 2));  
+            //console.log("collapseData: func: " + JSON.stringify(nodei, null, 2));  
             
-            for (var j=0; j < nodei.arguments.length; j++) {
+            for (var j in nodei.arguments) {
 
             	if (nodei.arguments[j].type == "const") {
             	    // Do nothing
@@ -380,7 +383,7 @@ function collapseData(nodes) {
             nodei.type = 'const';
             delete nodei.arguments;
             delete nodei.function;
-            //System.log("collapseData: result is " + JSON.stringify(nodei, null, 2));
+            //console.log("collapseData: result is " + JSON.stringify(nodei, null, 2));
         }
     }
     
@@ -392,8 +395,8 @@ function collapseData(nodes) {
             ans += nodei.value;
             
         } else if (nodei.op == '?') {
-            //System.log("Current value: " + ans);
-            //System.log("Full tree " + i + ": " + JSON.stringify(nodes, null, 2));
+            //console.log("Current value: " + ans);
+            //console.log("Full tree " + i + ": " + JSON.stringify(nodes, null, 2));
             
             var va;
             if ((nodes[i+1]) && (nodes[i+1].op == ":")) {
@@ -415,7 +418,7 @@ function collapseData(nodes) {
             // DO Nothing
         } else {
             // TODO: Improve
-            System.log("Illegal operator " + nodei.op + " at " + nodei.pos);
+            console.log("Illegal operator " + nodei.op + " at " + nodei.pos);
         }
     }
     
@@ -436,12 +439,12 @@ function evalExpression(node1, node2, node3, node4) {
 	    isEqual = (parseInt(node1.value) == parseInt(node2.value));
 	} else {
 	    isEqual = (("" + node1.value) == ("" + node2.value));
-	    //System.log("evalExpression: " + node1.value + " == " + node2.value + " is " + isEqual);
+	    //console.log("evalExpression: " + node1.value + " == " + node2.value + " is " + isEqual);
 	}
 	
         if (isEqual) {
             ans = node3;
-            //System.log("evalExpression: Ans is: " + JSON.stringify(ans, null, 2));
+            //console.log("evalExpression: Ans is: " + JSON.stringify(ans, null, 2));
         } else {
             ans = node4;
 	}
@@ -455,12 +458,12 @@ function evalExpression(node1, node2, node3, node4) {
 	    isNotEqual = (parseInt(node1.value) != parseInt(node2.value));
 	} else {
 	    isNotEqual = (("" + node1.value) != ("" + node2.value));
-	    //System.log("evalExpression: " + node1.value + " != " + node2.value + " is " + isNotEqual);
+	    //console.log("evalExpression: " + node1.value + " != " + node2.value + " is " + isNotEqual);
 	}
 	
         if (isNotEqual) {
             ans = node3;
-            //System.log("evalExpression: Ans is: " + JSON.stringify(ans, null, 2));
+            //console.log("evalExpression: Ans is: " + JSON.stringify(ans, null, 2));
         } else {
             ans = node4;
 	}
@@ -474,12 +477,12 @@ function evalExpression(node1, node2, node3, node4) {
 	    isGreater = (parseInt(node1.value) > parseInt(node2.value));
 	} else {
 	    isGreater = (("" + node1.value) > ("" + node2.value));
-	    //System.log("evalExpression: " + node1.value + " > " + node2.value + " is " + isGreater);
+	    //console.log("evalExpression: " + node1.value + " > " + node2.value + " is " + isGreater);
 	}
 	
         if (isGreater) {
             ans = node3;
-            //System.log("evalExpression: Ans is: " + JSON.stringify(ans, null, 2));
+            //console.log("evalExpression: Ans is: " + JSON.stringify(ans, null, 2));
         } else {
             ans = node4;
 	}
@@ -493,17 +496,17 @@ function evalExpression(node1, node2, node3, node4) {
 	    isLessThan = (parseInt(node1.value) < parseInt(node2.value));
 	} else {
 	    isLessThan = (("" + node1.value) < ("" + node2.value));
-	    //System.log("evalExpression: " + node1.value + " < " + node2.value + " is " + isLessThan);
+	    //console.log("evalExpression: " + node1.value + " < " + node2.value + " is " + isLessThan);
 	}
 	
         if (isLessThan) {
             ans = node3;
-            //System.log("evalExpression: Ans is: " + JSON.stringify(ans, null, 2));
+            //console.log("evalExpression: Ans is: " + JSON.stringify(ans, null, 2));
         } else {
             ans = node4;
 	}
     } else {
-        System.log("Illegal conditional operator " + node1.op + " at " + nodei.pos);
+        console.log("Illegal conditional operator " + node1.op + " at " + nodei.pos);
     }// TODO: else throw exception - illegal comparison operator
     
     return ans;
@@ -530,8 +533,8 @@ function callFunction(nodei) {
 
 ////////////////////////////////////
 function fcn_to_lower(nodei) {
-    //System.log("fcn:to_lower: " + JSON.stringify(nodei, null, 2));
-    //System.log("fcn:to_lower: value is " + nodei.arguments[0].value);
+    //console.log("fcn:to_lower: " + JSON.stringify(nodei, null, 2));
+    //console.log("fcn:to_lower: value is " + nodei.arguments[0].value);
     return nodei.arguments[0].value.toLowerCase();
 }
 
