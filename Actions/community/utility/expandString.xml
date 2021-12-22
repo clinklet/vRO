@@ -1,98 +1,16 @@
 <?xml version='1.0' encoding='UTF-8'?>
-<dunes-script-module name="expandString" result-type="string" api-version="6.0.0" id="b71ccb8b-fab1-4131-a88e-397bc4220b18" version="0.0.0" allowed-operations="vfe" category-name="community.utility">
+<dunes-script-module name="expandString" result-type="string" api-version="6.0.0" id="b71ccb8b-fab1-4131-a88e-397bc4220b18" version="0.0.1" allowed-operations="vfe" category-name="community.utility">
   <description><![CDATA[Scan a string for variable references and expand them to their values.]]></description>
+  <runtime><![CDATA[node:12]]></runtime>
   <param n="inputString" t="string"><![CDATA[String to be expanded]]></param>
   <param n="prop1" t="Properties"><![CDATA[Primary source of variables]]></param>
   <param n="prop2" t="Properties"><![CDATA[Optional secondary source of variables]]></param>
-  <script encoded="false"><![CDATA[/*#!/usr/bin/node
-//
-var prop = { first: "First", second: "Second", third: 'Third', first2: "${first}"};
-var nestedProp = { nfirst: "NFirst", nsecond: "NSecond", five: "5"};
-prop.nested = nestedProp;
-var str;
-var soln;
-var csoln;
-var pass = 0;
-var fail = 0;
-
-// Check nested properites and != conditional
-console.log("################ Test 1 ###################");
-str = "${nested.nfirst != 'First'? 'NFirst one'} test";
-soln = "NFirst one test";
-
-csoln = main(str, prop, null);
-
-console.log("Input is " + str);
-console.log("Solution is " + csoln);
-
-if (csoln != soln) {
-    fail++;
-    console.log("Expecting   " + soln);
-    console.log("Test 1 FAILURE");
-} else {
-    pass++;
-    console.log("Test 1 Passed");
+  <script encoded="false"><![CDATA[
+exports.handler = (context, inputs, callback) => {
+    console.log('Inputs were ' + JSON.stringify(inputs));
+    return main(inputs.inputString, inputs.prop1, inputs.prop2);
+    callback(undefined, {status: "done"});
 }
-
-// Check == conditional and \\${ escaping variable expansion
-console.log("################ Test 2 ###################");
-str = "\\${second} ${first == 'First'? 'First one'} test";
-soln = "${second} First one test";
-
-csoln = main(str, prop, null);
-
-console.log("Input is " + str);
-console.log("Solution is " + csoln);
-
-if (csoln != soln) {
-    fail++;
-    console.log("Test 2 FAILURE");
-    console.log("Expecting   " + soln);
-} else {
-    pass++;
-    console.log("Test 2 Passed");
-}
-
-// Check nested conditionals and multiple variables and quote compression
-console.log("################ Test 3 ###################");
-str = "hello ${ 'first''quote '+ to_lower('SECOND', third) + '_suffix'   } world ${first2 + ' one'} cond ${'First' == 5? 'yes' : to_lower(second) == 'second'? 'syes': 'sno'} end";
-soln = "hello first'quote second_suffix world First one cond syes end"
-csoln = main(str, prop, null);
-
-console.log("Input is " + str);
-console.log("Solution is " + csoln);
-
-if (csoln != soln) {
-    fail++;
-    console.log("Test 3 FAILURE");
-    console.log("Expecting   " + soln);
-} else {
-    pass++;
-    console.log("Test 3 Passed");
-}
-
-// Check numeric comparison in conditionals
-console.log("################ Test 4 ###################");
-str = "${'07' > five? 'Seven it is': 'Five it is'}";
-soln = "Seven it is"
-
-csoln = main(str, nestedProp, null);
-
-console.log("Input is " + str);
-console.log("Solution is " + csoln);
-
-if (csoln != soln) {
-    fail++;
-    console.log("Expecting   " + soln);
-    console.log("Test 4 FAILURE");
-} else {
-    pass++;
-    console.log("Test 4 Passed");
-}
-
-console.log("Pass = " + pass + ", fail = " + fail);
-*/
-return main(inputString, prop1, prop2);
 
 
 function main(str, prop1, prop2) {
