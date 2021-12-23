@@ -1,5 +1,5 @@
 <?xml version='1.0' encoding='UTF-8'?>
-<dunes-script-module name="expandString" result-type="string" api-version="6.0.0" id="14efe3f2-9d86-46b7-ba24-a2cc16c54a25" version="0.0.2" category-name="community.utility">
+<dunes-script-module name="expandString" result-type="string" api-version="6.0.0" id="14efe3f2-9d86-46b7-ba24-a2cc16c54a25" version="0.0.3" category-name="community.utility">
   <description><![CDATA[Scan a string for variable references and expand them to their values.]]></description>
   <param n="inputString" t="string"><![CDATA[String to be expanded]]></param>
   <param n="prop1" t="Properties"><![CDATA[Primary source of variables]]></param>
