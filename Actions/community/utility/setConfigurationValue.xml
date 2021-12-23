@@ -1,5 +1,5 @@
 <?xml version='1.0' encoding='UTF-8'?>
-<dunes-script-module name="setConfigurationValue" result-type="void" api-version="6.0.0" id="ddb08fb9-d728-40c3-857d-53271050772f" version="0.1.0" category-name="community.utility">
+<dunes-script-module name="setConfigurationValue" result-type="void" api-version="6.0.0" id="ddb08fb9-d728-40c3-857d-53271050772f" version="0.1.1" category-name="community.utility">
   <description><![CDATA[Set the value of a configuration element.  
 Note:  This is NOT vRO cluster safe.  Throws an exception if CE not found -or- attribute not found and typeHint not specified.]]></description>
   <param n="configElementName" t="string"><![CDATA[The CE sought. If it has a / in the name, then that is the absolute path.  If not, then search for it.]]></param>
@@ -7,10 +7,18 @@ Note:  This is NOT vRO cluster safe.  Throws an exception if CE not found -or- a
   <param n="value" t="Any"><![CDATA[Value to be set]]></param>
   <param n="typeHint" t="string"><![CDATA[If set, then the attribute may be auto-created with this data type]]></param>
   <script encoded="false"><![CDATA[/*
+All codes are used at your own risk.  We take no responsibility for any unexpected side effects.
+We do ask that, should you find an error, please report it so that we can fix it for others or 
+join the community to assist in the correction.
+
+Licensing is under GPL, which can be found at https://www.gnu.org/licenses/gpl-3.0.en.html
+
+*/
+/*
 Version Date    Developer
     Description of change
 
-0.0.2 Dec 18, 2021    Carl Linkletter
+0.1.1 Dec 18, 2021    Carl Linkletter
     Initial
 */
 
