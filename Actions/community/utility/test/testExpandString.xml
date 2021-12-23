@@ -8,6 +8,7 @@ var soln;
 var csoln;
 var pass = 0;
 var fail = 0;
+var testNo = 1;
 
 /// Check nested properites and != conditional
 System.log("################ Test 1 ###################");
@@ -22,13 +23,14 @@ System.log("Solution is " + csoln);
 if (csoln != soln) {
     fail++;
     System.log("Expecting   " + soln);
-    System.log("Test 1 FAILURE");
+    System.log("Test " + testNo + " FAILURE");
 } else {
     pass++;
-    System.log("Test 1 Passed");
+    System.log("Test  " + testNo + " Passed");
 }
 
 // Check == conditional and \\${ escaping variable expansion
+testNo++;
 System.log("################ Test 2 ###################");
 str = "\\${second} ${first == 'First'? 'First one'} test";
 soln = "${second} First one test";
@@ -40,14 +42,15 @@ System.log("Solution is " + csoln);
 
 if (csoln != soln) {
     fail++;
-    System.log("Test 2 FAILURE");
+    System.log("Test " + testNo + " FAILURE");
     System.log("Expecting   " + soln);
 } else {
     pass++;
-    System.log("Test 2 Passed");
+    System.log("Test  " + testNo + " Passed");
 }
 
 // Check nested conditionals and multiple variables and quote compression
+testNo++;
 System.log("################ Test 3 ###################");
 str = "hello ${ 'first''quote '+ to_lower('SECOND', third) + '_suffix'   } world ${first2 + ' one'} cond ${'First' == 5? 'yes' : to_lower(second) == 'second'? 'syes': 'sno'} end";
 soln = "hello first'quote second_suffix world First one cond syes end"
@@ -59,14 +62,15 @@ System.log("Solution is " + csoln);
 
 if (csoln != soln) {
     fail++;
-    System.log("Test 3 FAILURE");
+    System.log("Test " + testNo + " FAILURE");
     System.log("Expecting   " + soln);
 } else {
     pass++;
-    System.log("Test 3 Passed");
+    System.log("Test  " + testNo + " Passed");
 }
 
 // Check numeric comparison in conditionals
+testNo++;
 System.log("################ Test 4 ###################");
 str = "${'07' > five? 'Seven it is': 'Five it is'}";
 soln = "Seven it is"
@@ -79,13 +83,33 @@ System.log("Solution is " + csoln);
 if (csoln != soln) {
     fail++;
     System.log("Expecting   " + soln);
-    System.log("Test 4 FAILURE");
+    System.log("Test " + testNo + " FAILURE");
 } else {
     pass++;
-    System.log("Test 4 Passed");
+    System.log("Test  " + testNo + " Passed");
+}
+
+// Check Functions Set 1
+testNo++;
+System.log("################ Test 5 ###################");
+str = '${to_lower("ABC") + to_upper(first) + trim ("  \tghi ")}';
+soln = "abcFIRSTghi"
+
+csoln = System.getModule("community.utility").expandString(str, prop, null);
+
+System.log("Input is " + str);
+System.log("Solution is " + csoln);
+
+if (csoln != soln) {
+    fail++;
+    System.log("Expecting   " + soln);
+    System.log("Test " + testNo + " FAILURE");
+} else {
+    pass++;
+    System.log("Test  " + testNo + " Passed");
 }
 
 System.log("Pass = " + pass + ", fail = " + fail);
 
-return true;]]></script>
+return (pass == 5);]]></script>
 </dunes-script-module>
