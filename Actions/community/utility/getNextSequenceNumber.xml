@@ -1,13 +1,21 @@
 <?xml version='1.0' encoding='UTF-8'?>
-<dunes-script-module name="getNextSequenceNumber" result-type="number" api-version="6.0.0" id="5fd1baf9-d866-4253-af5b-50405abec0d2" version="0.1.0" category-name="community.utility">
+<dunes-script-module name="getNextSequenceNumber" result-type="number" api-version="6.0.0" id="5fd1baf9-d866-4253-af5b-50405abec0d2" version="0.1.1" category-name="community.utility">
   <description><![CDATA[Get the next number in a sequence in a vRO cluster safe way.  Requires a configuration element "Sequences" to exist.]]></description>
   <param n="sequenceName" t="string"><![CDATA[Sequence name]]></param>
   <param n="autoCreate" t="boolean"><![CDATA[Optional: If sequence is not found, should it be created with an initial value of 1.  Default is false.]]></param>
   <script encoded="false"><![CDATA[/*
+All codes are used at your own risk.  We take no responsibility for any unexpected side effects.
+We do ask that, should you find an error, please report it so that we can fix it for others or 
+join the community to assist in the correction.
+
+Licensing is under GPL, which can be found at https://www.gnu.org/licenses/gpl-3.0.en.html
+
+*/
+/*
 Version Date    Developer
     Description of change
 
-0.0.3 Dec 18, 2021    Carl Linkletter
+0.1.1 Dec 18, 2021    Carl Linkletter
 	Initial
 */
 

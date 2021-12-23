@@ -1,14 +1,22 @@
 <?xml version='1.0' encoding='UTF-8'?>
-<dunes-script-module name="setResourceValue" result-type="void" api-version="6.0.0" id="40cca4d7-7e66-4cec-8af1-6e98c5023af4" version="0.1.0" category-name="community.utility">
+<dunes-script-module name="setResourceValue" result-type="void" api-version="6.0.0" id="40cca4d7-7e66-4cec-8af1-6e98c5023af4" version="0.1.1" category-name="community.utility">
   <description><![CDATA[Set the value on a Resource Element.  Throws an exception if the element is not found.]]></description>
   <param n="resourceElementName" t="string"><![CDATA[Name or Path to the resource element]]></param>
   <param n="value" t="string"><![CDATA[Value to set in resource element]]></param>
   <param n="mimeType" t="string"><![CDATA[Mime type of the content]]></param>
   <script encoded="false"><![CDATA[/*
+All codes are used at your own risk.  We take no responsibility for any unexpected side effects.
+We do ask that, should you find an error, please report it so that we can fix it for others or 
+join the community to assist in the correction.
+
+Licensing is under GPL, which can be found at https://www.gnu.org/licenses/gpl-3.0.en.html
+
+*/
+/*
 Version Date    Developer
     Description of change
 
-0.0.1 Dec 18, 2021    Carl Linkletter
+0.1.1 Dec 18, 2021    Carl Linkletter
     Initial
 */
 System.getModule("community.utility.log").logDebug("community.utility.log", 1, "START: setResourceValue " + resourceElementName);

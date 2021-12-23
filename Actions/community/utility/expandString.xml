@@ -1,56 +1,131 @@
 <?xml version='1.0' encoding='UTF-8'?>
-<dunes-script-module name="expandString" result-type="string" api-version="6.0.0" id="14efe3f2-9d86-46b7-ba24-a2cc16c54a25" version="0.0.2" category-name="community.utility">
+<dunes-script-module name="expandString" result-type="string" api-version="6.0.0" id="14efe3f2-9d86-46b7-ba24-a2cc16c54a25" version="0.0.3" category-name="community.utility">
   <description><![CDATA[Scan a string for variable references and expand them to their values.]]></description>
   <param n="inputString" t="string"><![CDATA[String to be expanded]]></param>
   <param n="prop1" t="Properties"><![CDATA[Primary source of variables]]></param>
   <param n="prop2" t="Properties"><![CDATA[Optional secondary source of variables]]></param>
-  <script encoded="false"><![CDATA[
-return main(inputString, prop1, prop2);
+  <script encoded="false"><![CDATA[/*
+All codes are used at your own risk.  We take no responsibility for any unexpected side effects.
+We do ask that, should you find an error, please report it so that we can fix it for others or 
+join the community to assist in the correction.
 
-function main(str, prop1, prop2) {
+Licensing is under GPL, which can be found at https://www.gnu.org/licenses/gpl-3.0.en.html
 
-	/*
+*/
+/*
+Version Date    Developer
+    Description of change
 
-	Fields:
-		*value - string or array of sub-objects
-		*type - node type.  See below
-		*pos - Position in the array.
-		*op - Operator.
-		function - Name of function 
-		arguments - Arguments to the function
+0.0.2 Dec 23, 2021    Carl Linkletter
+    Initial
+*/
 
-	Types: 
-		const - String literal
-		var - Variable that needs to be expanded.  When expaned, turns the value into an xvar.
-		xvar - Value is an array of sub-objects
-		func - Function call
 
-	op:
-		+ - concatenation
-		== - Compare two values for equality.  Does numeric comparison if both values are numbers.
-		!= - Compare two values for inequality.  Does numeric comparison if both values are numbers.
-		> - Compare two values for greater than.  Does numeric comparison if both values are numbers.
-		< - Compare two values for less than.  Does numeric comparison if both values are numbers.
-		
-	*/
-    //System.log("Input: " + str);
+/*
+Usage documentation
+
+The goal of this string substitution routine is to give vRO the same string expansion capabilities as Cloud Assembly
+Cloud Templates have.  As of this writing
+https://docs.vmware.com/en/vRealize-Automation/services/Using-and-Managing-Cloud-Assembly/GUID-12F0BC64-6391-4E5F-AA48-C5959024F3EB.html
+Not all capabilities are implemented but a few are.  The goal is to retain as close as possible to syntax 
+compatibility with Cloud Templates.
+
+Functions implemented:
+    to_lower
+    to_upper
+    substring
+    contains(string, value) // not array
+    trim
+
+Examples
+    Assuming property   "myVar" == "varValue"
+                        "seven" == "07"
+
+    Input: This ${myVar} needs to be expanded
+    Output: This varValue needs to be expanded
+
+    Input: This ${myvar + " needs"} to be expanded
+    Output: This varValue needs to be expanded
+
+    Input: This ${myvar + to_lower(" NEEDS")} to be expanded
+    Output: This varValue needs to be expanded
+
+    Input: This ${myvar == "varValue"? "varValue needs": "needs"} to be expanded
+    Output: This varValue needs to be expanded
+
+    Input: This $[myvar == "varValue"? to_upper(varValue) + " needs": "unknown needs"] to be expanded
+    Output: This VARVALUE needs to be expanded
+
+    Input: Seven ${seven > "5"? "is greater than 5": "is less than 5"}      // If both sides are numbers, do number comparison
+    Output: Seven is greater than 5
+
+    Input: Seven ${seven + "a" > "5a"? "is greater than 5": "is less than 5"}    // Note:  Force string comparison
+    Output: Seven is less than 5
+
+Tips:
+    Comparison is numeric unless there is a non-digit in the comparison.  Then it performs a string comparison
+
+    You can nest properties using a.b syntax. i.e. Get property 'a' which is a Property type.  Then lookup b in that child property."
+
+    You can suppress variable expansion by using \${ syntax.
+
+    Nested double quote is support ("ab""cd" results in ab"cd )
+
+    The variables may thenselves have variable references and they will be expanded...but only to a point.  Circular loops
+    are not detected.  We just stop after a couple of nested expansions.
+
+*/
+
+/*
+Code documentation
+
+Overall process: 
+    First the string is parsed into a set of nodes.
+    Then, when appropriate (var, xvar and func arguments), those nodes are broken into a set of child nodes
+    This process is repeated until it is appropriate to stop (3 passes currently)
+    Then the leaf nodes are collapsed into the parent nodes until the tree is one level deep. 
+    Then the final node layer is joined into the resulting string.
+
+Node Fields:
+    *value - string or array of sub-objects
+    *type - node type.  See below
+    *pos - Position in the array.
+    *op - Operator.
+    function - Name of function 
+    arguments - Arguments to the function
+
+Node Types: 
+    const - String literal
+    var - Variable that needs to be expanded.  When expaned, turns the value into an xvar.
+    xvar - Value is an array of sub-objects
+    func - Function call
+
+Node op:
+    + - concatenation
+    == - Compare two values for equality.  Does numeric comparison if both values are numbers.
+    != - Compare two values for inequality.  Does numeric comparison if both values are numbers.
+    > - Compare two values for greater than.  Does numeric comparison if both values are numbers.
+    < - Compare two values for less than.  Does numeric comparison if both values are numbers.
     
-	//System.log("### First Pass");
-	var ans = parseString(str, "", 0);
-	//System.log("Pass 1 results: " + JSON.stringify(ans, null, 2));
+*/
+//System.log("Input: " + inputString);
 
-	//System.log("### Second Pass");
-	// Expand variables and functions
-	ans = expandVariables(ans, prop1, prop2);
-	//System.log("Pass 2 results: " + JSON.stringify(ans, null, 2));
+//System.log("### First Pass");
+var nodes = parseString(inputString, "", 0);
+//System.log("Pass 1 results: " + JSON.stringify(ans, null, 2));
 
-	//System.log("### Third pass");
-	ans = expandVariables(ans, prop1, prop2);
-	//System.log("Pass 3 results: " + JSON.stringify(ans, null, 2));
+//System.log("### Second Pass");
+// Expand variables and functions
+nodes = expandVariables(nodes, prop1, prop2);
+//System.log("Pass 2 results: " + JSON.stringify(ans, null, 2));
+
+//System.log("### Third pass");
+nodes = expandVariables(nodes, prop1, prop2);
+//System.log("Pass 3 results: " + JSON.stringify(ans, null, 2));
 
 
-	return collapseData(ans);
-}
+return collapseData(nodes);
+
 
 //////////////////////////////////////////////////////////////////////////
 // Parsing section
@@ -512,9 +587,15 @@ function evalExpression(node1, node2, node3, node4) {
 ////////////////////////////////////
 function isFunction(str) {
     if (str.indexOf("to_lower") == 0) {
-	return true;
+	    return true;
     } else if (str.indexOf("to_upper") == 0) {
-	return true;
+	    return true;
+    } else if (str.indexOf("contains") == 0) {
+	    return true;
+    } else if (str.indexOf("substr") == 0) {
+	    return true;
+    } else if (str.indexOf("trim") == 0) {
+	    return true;
     }
     return false;
 }
@@ -525,6 +606,12 @@ function callFunction(nodei) {
         return fcn_to_lower(nodei);
     } else if (nodei.function == 'to_upper') {
         return fcn_to_upper(nodei);
+    } else if (nodei.function == 'contains') {
+        return fcn_contains(nodei);
+    } else if (nodei.function == 'substr') {
+        return fcn_substr(nodei);
+    } else if (nodei.function == 'trim') {
+        return fcn_trim(nodei);
     }
 }
 
@@ -538,5 +625,21 @@ function fcn_to_lower(nodei) {
 ////////////////////////////////////
 function fcn_to_upper(nodei) {
     return nodei.arguments[0].value.toUpperCase();
-}]]></script>
+}
+
+////////////////////////////////////
+function fcn_contains(nodei) {
+    return (nodei.arguments[0].value.indexOf(nodei.arguments[1].value) >= 0);
+}
+
+////////////////////////////////////
+function fcn_substring(nodei) {
+    return nodei.arguments[0].value.substring(nodei.arguments[1].value, nodei.arguments[2].value);
+}
+
+////////////////////////////////////
+function fcn_trim(nodei) {
+    return ltrim(rtrim(nodei.arguments[0].value));
+}
+]]></script>
 </dunes-script-module>
