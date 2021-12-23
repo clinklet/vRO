@@ -109,7 +109,28 @@ if (csoln != soln) {
     System.log("Test  " + testNo + " Passed");
 }
 
+// Check Functions Set 2
+testNo++;
+System.log("################ Test 6 ###################");
+str = '${substring("abcdefghij", 0, 5)}';
+soln = "abcde"
+
+csoln = System.getModule("community.utility").expandString(str, prop, null);
+
+System.log("Input is " + str);
+System.log("Solution is " + csoln);
+
+if (csoln != soln) {
+    fail++;
+    System.log("Expecting   " + soln);
+    System.log("Test " + testNo + " FAILURE");
+} else {
+    pass++;
+    System.log("Test  " + testNo + " Passed");
+}
+
+////// Ending
 System.log("Pass = " + pass + ", fail = " + fail);
 
-return (pass == 5);]]></script>
+return (fail == 0);]]></script>
 </dunes-script-module>
