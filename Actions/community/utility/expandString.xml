@@ -24,6 +24,19 @@ Version Date    Developer
 /*
 Usage documentation
 
+The goal of this string substitution routine is to give vRO the same string expansion capabilities as Cloud Assembly
+Cloud Templates have.  As of this writing
+https://docs.vmware.com/en/vRealize-Automation/services/Using-and-Managing-Cloud-Assembly/GUID-12F0BC64-6391-4E5F-AA48-C5959024F3EB.html
+Not all capabilities are implemented but a few are.  The goal is to retain as close as possible to syntax 
+compatibility with Cloud Templates.
+
+Functions implemented:
+    to_lower
+    to_upper
+    substring
+    contains(string, value) // not array
+    trim
+
 Examples
     Assuming property   "myVar" == "varValue"
                         "seven" == "07"
@@ -574,9 +587,15 @@ function evalExpression(node1, node2, node3, node4) {
 ////////////////////////////////////
 function isFunction(str) {
     if (str.indexOf("to_lower") == 0) {
-	return true;
+	    return true;
     } else if (str.indexOf("to_upper") == 0) {
-	return true;
+	    return true;
+    } else if (str.indexOf("contains") == 0) {
+	    return true;
+    } else if (str.indexOf("substr") == 0) {
+	    return true;
+    } else if (str.indexOf("trim") == 0) {
+	    return true;
     }
     return false;
 }
@@ -587,6 +606,12 @@ function callFunction(nodei) {
         return fcn_to_lower(nodei);
     } else if (nodei.function == 'to_upper') {
         return fcn_to_upper(nodei);
+    } else if (nodei.function == 'contains') {
+        return fcn_contains(nodei);
+    } else if (nodei.function == 'substr') {
+        return fcn_substr(nodei);
+    } else if (nodei.function == 'trim') {
+        return fcn_trim(nodei);
     }
 }
 
@@ -600,5 +625,21 @@ function fcn_to_lower(nodei) {
 ////////////////////////////////////
 function fcn_to_upper(nodei) {
     return nodei.arguments[0].value.toUpperCase();
-}]]></script>
+}
+
+////////////////////////////////////
+function fcn_contains(nodei) {
+    return (nodei.arguments[0].value.indexOf(nodei.arguments[1].value) >= 0);
+}
+
+////////////////////////////////////
+function fcn_substring(nodei) {
+    return nodei.arguments[0].value.substring(nodei.arguments[1].value, nodei.arguments[2].value);
+}
+
+////////////////////////////////////
+function fcn_trim(nodei) {
+    return ltrim(rtrim(nodei.arguments[0].value));
+}
+]]></script>
 </dunes-script-module>
