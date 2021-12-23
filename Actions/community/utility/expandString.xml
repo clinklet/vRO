@@ -341,10 +341,15 @@ function expandVariables(nodes, prop1, prop2) {
 	        } else { // variable
 		        var p = getPropertyValue(prop1, prop2, nodes[i].value);
 		        if (p == null) {
-		            System.log("Error: Property " + nodes[i].value + " not found.");
-		            // TODO Improve
-		            nodes[i].value = "";
-		            nodes[i].type = "const";
+                    if (isNaN(nodes[i].value)) {
+                        System.log("Error: Property " + nodes[i].value + " not found.");
+                        // TODO Improve
+                        nodes[i].value = "";
+                    } else {
+                        // It is a number, leave alone.
+                    }
+
+                    nodes[i].type = "const";
 		        } else {
 		            nodes[i].value = parseString(p, nodes[i].pos, 0);
 	                nodes[i].type = 'xvar';
@@ -598,7 +603,7 @@ function isFunction(str) {
 	    return true;
     } else if (str.indexOf("contains") == 0) {
 	    return true;
-    } else if (str.indexOf("substr") == 0) {
+    } else if (str.indexOf("substring") == 0) {
 	    return true;
     } else if (str.indexOf("trim") == 0) {
 	    return true;
@@ -614,8 +619,8 @@ function callFunction(nodei) {
         return fcn_to_upper(nodei);
     } else if (nodei.function == 'contains') {
         return fcn_contains(nodei);
-    } else if (nodei.function == 'substr') {
-        return fcn_substr(nodei);
+    } else if (nodei.function == 'substring') {
+        return fcn_substring(nodei);
     } else if (nodei.function == 'trim') {
         return fcn_trim(nodei);
     }
@@ -640,6 +645,7 @@ function fcn_contains(nodei) {
 
 ////////////////////////////////////
 function fcn_substring(nodei) {
+    //System.log("fcn_substring: Processing " + JSON.stringify(nodei));
     return nodei.arguments[0].value.substring(nodei.arguments[1].value, nodei.arguments[2].value);
 }
 
