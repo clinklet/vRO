@@ -1,14 +1,22 @@
 <?xml version='1.0' encoding='UTF-8'?>
-<dunes-script-module name="getConfigurationValue" result-type="Any" api-version="6.0.0" id="46ff40fc-3ce9-4dd7-a060-9b148f29934e" version="0.1.0" category-name="community.utility">
+<dunes-script-module name="getConfigurationValue" result-type="Any" api-version="6.0.0" id="46ff40fc-3ce9-4dd7-a060-9b148f29934e" version="0.1.1" category-name="community.utility">
   <description><![CDATA[Get the value of an attribute in a configuration element.  Returns null if attribute is not found.  Throws an exception if CE is not found or if attribute value is unset.]]></description>
   <param n="configElementName" t="string"><![CDATA[Configuration element (name or path) where attribute is located.]]></param>
   <param n="attributeName" t="string"><![CDATA[Attribute name]]></param>
   <param n="silent" t="boolean"><![CDATA[Optional.  Log if attribute is not found.]]></param>
   <script encoded="false"><![CDATA[/*
+All codes are used at your own risk.  We take no responsibility for any unexpected side effects.
+We do ask that, should you find an error, please report it so that we can fix it for others or 
+join the community to assist in the correction.
+
+Licensing is under GPL, which can be found at https://www.gnu.org/licenses/gpl-3.0.en.html
+
+*/
+/*
 Version Date    Developer
     Description of change
 
-0.0.2   Dec 18, 2021    Carl Linkletter
+0.1.1   Dec 18, 2021    Carl Linkletter
     Initial
 */
 // If silent not provided, then assume not.
