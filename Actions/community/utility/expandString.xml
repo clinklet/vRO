@@ -1,5 +1,5 @@
 <?xml version='1.0' encoding='UTF-8'?>
-<dunes-script-module name="expandString" result-type="string" api-version="6.0.0" id="14efe3f2-9d86-46b7-ba24-a2cc16c54a25" version="0.0.3" category-name="community.utility">
+<dunes-script-module name="expandString" result-type="string" api-version="6.0.0" id="14efe3f2-9d86-46b7-ba24-a2cc16c54a25" version="0.0.4" category-name="community.utility">
   <description><![CDATA[Scan a string for variable references and expand them to their values.]]></description>
   <param n="inputString" t="string"><![CDATA[String to be expanded]]></param>
   <param n="prop1" t="Properties"><![CDATA[Primary source of variables]]></param>
@@ -16,7 +16,7 @@ Licensing is under GPL, which can be found at https://www.gnu.org/licenses/gpl-3
 Version Date    Developer
     Description of change
 
-0.0.2 Dec 23, 2021    Carl Linkletter
+0.0.4 Dec 23, 2021    Carl Linkletter
     Initial
 */
 
@@ -301,6 +301,11 @@ function rtrim (str) {
 }
 
 ////////////////////////////////////
+function trim (str) {
+    return rtrim(ltrim(str));
+}
+
+////////////////////////////////////
 // Extract the next word 
 // ord is the start of the next word.
 function nextWord(str, ord) {
@@ -330,7 +335,8 @@ function expandVariables(nodes, prop1, prop2) {
 		        nodes[i].type = 'func';
 		        nodes[i].arguments = getFunctionArguments(nodes[i].value, nodes[i].pos);
 		        var j = nodes[i].value.indexOf('(');
-		        nodes[i].function = nodes[i].value.substring(0, j);
+		        nodes[i].function = trim(nodes[i].value.substring(0, j));
+                //System.log("expandVariables: Function node " + JSON.stringify(nodes[i], null, 2));
 		
 	        } else { // variable
 		        var p = getPropertyValue(prop1, prop2, nodes[i].value);
@@ -388,14 +394,14 @@ function getPropertyValue(prop1, prop2, propName) {
 ////////////////////////////////////
 // Extract arguments to a function.
 function getFunctionArguments(str, pos) {
-    //System.log("L4: getFunctionArgs");
+    //System.log("getFunctionArguments: Input: " + str);
     var ans = [];
     str = rtrim(str);
     var i = str.indexOf("(");
     str = ltrim(str.substring(i+1));
     
-    str = str.substring(0, str.length-1);
-    //System.log("l4 fcn: args: '" + str + "'");
+    str = str.substring(0, str.length-1); // remove tailing ")"
+    //System.log("getFunctionArguments: Processing: '" + str + "'");
     
     while (str.length > 0) {
         i = nextWordOrd(str, ",");
@@ -405,15 +411,15 @@ function getFunctionArguments(str, pos) {
         var word = nextWord(str, i);
         
         var node = {};
-	node.value = word;
-	node.op = ",";
-	node.pos = pos;
-	if (qchar != null) node.type = 'const';
-	else node.type = 'var';
-	ans.push(node);
+	    node.value = word;
+	    node.op = ",";
+	    node.pos = pos;
+	    if (qchar != null) node.type = 'const';
+	    else node.type = 'var';
+	    ans.push(node);
 	
         str = ltrim(str.substring(i+1)); 
-        //System.log("l4: Remaining: " + str);
+        //System.log("getFunctionArguments: Pushing arg: " + JSON.stringify(node));
     }  
     return ans;
 }
@@ -639,7 +645,8 @@ function fcn_substring(nodei) {
 
 ////////////////////////////////////
 function fcn_trim(nodei) {
-    return ltrim(rtrim(nodei.arguments[0].value));
+    //System.log("fcn_trim: Processing " + JSON.stringify(nodei));
+    return trim(nodei.arguments[0].value);
 }
 ]]></script>
 </dunes-script-module>
