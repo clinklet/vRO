@@ -1,5 +1,5 @@
 <?xml version='1.0' encoding='UTF-8'?>
-<dunes-script-module name="expandString" result-type="string" api-version="6.0.0" id="14efe3f2-9d86-46b7-ba24-a2cc16c54a25" version="0.0.4" category-name="community.utility">
+<dunes-script-module name="expandString" result-type="string" api-version="6.0.0" id="14efe3f2-9d86-46b7-ba24-a2cc16c54a25" version="0.0.5" category-name="community.utility">
   <description><![CDATA[Scan a string for variable references and expand them to their values.]]></description>
   <param n="inputString" t="string"><![CDATA[String to be expanded]]></param>
   <param n="prop1" t="Properties"><![CDATA[Primary source of variables]]></param>
@@ -89,7 +89,7 @@ Overall process:
 Node Fields:
     *value - string or array of sub-objects
     *type - node type.  See below
-    *pos - Position in the array.
+    *pos - Position in the array.  Used only for issuing error messages.
     *op - Operator.
     function - Name of function 
     arguments - Arguments to the function
@@ -109,6 +109,7 @@ Node op:
     
 */
 //System.log("Input: " + inputString);
+System.getModule("community.utility.log").logDebug("community.utility", 1, "Start: expandString: " + inputString);
 
 //System.log("### First Pass");
 var nodes = parseString(inputString, "", 0);
@@ -123,8 +124,11 @@ nodes = expandVariables(nodes, prop1, prop2);
 nodes = expandVariables(nodes, prop1, prop2);
 //System.log("Pass 3 results: " + JSON.stringify(ans, null, 2));
 
+var ans = collapseData(nodes);
 
-return collapseData(nodes);
+System.getModule("community.utility.log").logDebug("community.utility", 1, "End: expandString: " + inputString + " = " + ans);
+
+return ans;
 
 
 //////////////////////////////////////////////////////////////////////////
@@ -202,15 +206,16 @@ function parseVariable(str, npos, pos) {
     while (str.length > 0) {
         var qchar = null;
         if ((str[0] == "'") || (str[0] == '"')) qchar = str[0];
+        var curpos = (npos == "")? "" + pos : npos + "." + pos;
 
-        var i = nextWordOrd(str, parserChar);
+        var i = nextWordOrd(str, parserChar, curpos);
 	    var i2 = 0;
         word = nextWord(str, i);
         str = ltrim(str.substring(i));
 	    var op = "";
 
 	    if (str.length > 0) { // Get operator
-	        i2 = nextWordOrd(str, parserChar);
+	        i2 = nextWordOrd(str, parserChar, curpos);
 	        op = nextWord(str, i2);
             str = ltrim(str.substring(i2));
             if (op != "+") parserChar = " ?:";
@@ -239,21 +244,28 @@ function parseVariable(str, npos, pos) {
 
 ////////////////////////////////////
 // Get the starting ordinal (position) of the next word
-function nextWordOrd(str, sep) {
+function nextWordOrd(str, sep, pos) {
     var ans = 0;
     //System.log('nextWordOrd: input "' + str + '", sep="' + sep + '"');
 
     if ((str[0] == "'") || (str[0] == '"')) {
 	    ans = str.substring(1).indexOf(str[0]);
 
-	    if (ans < 0) ans = str.length; // Missing matching quote, default to full string.
-	    else ans++; // search above starts on first char, so add 1 more to str index.
-	
+	    if (ans < 0) {
+            System.warn("expandString: Missing closing quote at " + pos + ".  Assuming end of string.");
+            ans = str.length; // Missing matching quote, default to full string.
+        } else {
+            ans++; // search above starts on first char, so add 1 more to str index.
+        }
+
 	    while ((ans < str.length-1) && (str[ans+1] == str[0])) { // double quotes
 	        ans += 2;
 	        j = str.substring(ans).indexOf(str[0]);
 	        ans = ans + j;
-	        if (j < 0) ans = str.length; // Missing matching quote, default to full string.
+	        if (j < 0) {
+                ans = str.length+1; // Missing matching quote, default to full string.
+                System.warn("expandString: Missing closing quote at " + pos + ".  Assuming end of string.");
+            }
 	    }
 	
 	    ans++; // move to first char of next word
@@ -265,7 +277,7 @@ function nextWordOrd(str, sep) {
     	// Find a ")" that is not inside quotes.
     	while ((ans < str.length) && (str[ans] != ')') && (qu == null)) {
 
-    	    if ((str[ans] == "'") || (str[ans] == '"')) {
+    	    if ((str[ans] == "'") || (str[ans] == '"')) { // toggle inside quotes state
     	    	if (qu == null) qu = str[i];
     	    	else if (str[ans] == qu) qu = null;
     	    }
@@ -314,7 +326,9 @@ function nextWord(str, ord) {
     if ((word[0] == "'") || (word[0] == '"')) {
 	    var qchar=word[0];
 	    word = word.substring(1);
-	    word = word.substring(0, word.length-1);
+	    if (word[word.length-1] == qchar) { // do not remove last char if missing closing quote
+            word = word.substring(0, word.length-1);
+        }
 	    if (qchar == "'") word = word.replace(/''/g, "'");
 	    else word = word.replace(/""/g, '"');
     }
@@ -409,7 +423,7 @@ function getFunctionArguments(str, pos) {
     //System.log("getFunctionArguments: Processing: '" + str + "'");
     
     while (str.length > 0) {
-        i = nextWordOrd(str, ",");
+        i = nextWordOrd(str, ",", pos);
         var qchar = null;
     	if ((str[0] == "'") || (str[0] == '"')) qchar=str[0];
 	
@@ -501,7 +515,7 @@ function collapseData(nodes) {
             // DO Nothing
         } else {
             // TODO: Improve
-            System.log("Illegal operator " + nodei.op + " at " + nodei.pos);
+            throw "Illegal operator " + nodei.op + " at " + nodei.pos;
         }
     }
     
