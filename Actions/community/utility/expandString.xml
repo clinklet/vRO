@@ -1,5 +1,5 @@
 <?xml version='1.0' encoding='UTF-8'?>
-<dunes-script-module name="expandString" result-type="string" api-version="6.0.0" id="14efe3f2-9d86-46b7-ba24-a2cc16c54a25" version="0.0.5" category-name="community.utility">
+<dunes-script-module name="expandString" result-type="string" api-version="6.0.0" id="14efe3f2-9d86-46b7-ba24-a2cc16c54a25" version="0.0.6" category-name="community.utility">
   <description><![CDATA[Scan a string for variable references and expand them to their values.]]></description>
   <param n="inputString" t="string"><![CDATA[String to be expanded]]></param>
   <param n="prop1" t="Properties"><![CDATA[Primary source of variables]]></param>
@@ -16,7 +16,7 @@ Licensing is under GPL, which can be found at https://www.gnu.org/licenses/gpl-3
 Version Date    Developer
     Description of change
 
-0.0.4 Dec 23, 2021    Carl Linkletter
+0.0.6 Dec 27, 2021    Carl Linkletter
     Initial
 */
 
@@ -126,7 +126,7 @@ nodes = expandVariables(nodes, prop1, prop2);
 
 var ans = collapseData(nodes);
 
-System.getModule("community.utility.log").logDebug("community.utility", 1, "End: expandString: " + inputString + " = " + ans);
+System.getModule("community.utility.log").logDebug("community.utility", 1, "End: expandString: " + inputString + ". Expanded String is: " + ans);
 
 return ans;
 
